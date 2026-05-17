@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.3.0] — 2026-05-17
+
+### Added
+- feat(vendor): vendor-sync-initial — 13 OD contracts files + HB-3 tests (#5)
+
+**Install:** `npm install open-design-mcp@0.3.0`
+
+---
+
 ## [0.2.1] — 2026-05-17
 
 ### Documentation
