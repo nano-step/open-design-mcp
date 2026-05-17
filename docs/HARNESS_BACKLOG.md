@@ -98,3 +98,22 @@ tiny (additive tests, no production code change)
 
 #### Status
 proposed
+
+---
+
+### HB-4: Bump GitHub Actions to Node 24 runner before September 2026
+
+#### Discovered While
+init-package-scaffold PR #3 CI run (deprecation annotation). `actions/checkout@v4` + `actions/setup-node@v4` use Node 20 runner; GitHub forces Node 24 runners by default starting 2026-06-02, and removes Node 20 entirely 2026-09-16.
+
+#### Current Pain
+Annotation noise on every CI run. Hard deadline before 2026-09-16 or CI breaks.
+
+#### Suggested Improvement
+Bump action versions when v5 (Node 24-compatible) releases. If not yet available before deadline, add `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true` env var to workflow.
+
+#### Risk
+tiny (CI maintenance, no production impact)
+
+#### Status
+proposed
