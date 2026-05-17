@@ -3,6 +3,16 @@
 All notable changes to this project will be documented in this file.
 
 
+
+## [0.2.1] — 2026-05-17
+
+### Documentation
+- docs(harness): add HB-5 — read serverInfo.version dynamically from package.json
+
+**Install:** `npm install open-design-mcp@0.2.1`
+
+---
+
 ## [0.2.0] — 2026-05-17
 
 ### Added
