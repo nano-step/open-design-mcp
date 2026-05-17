@@ -117,3 +117,27 @@ tiny (CI maintenance, no production impact)
 
 #### Status
 proposed
+
+---
+
+### HB-5: Read `serverInfo.version` dynamically from `package.json`
+
+#### Discovered While
+v0.2.0 smoke test after `npm publish`. The MCP `initialize` response returns `serverInfo.version: "0.1.0"` because `src/server.ts` hard-codes the version string. The npm package version is 0.2.0 (auto-bumped by shared-workflows). Inconsistency.
+
+#### Current Pain
+MCP clients see a stale version when introspecting capabilities. Confusing for debugging and version-pinning client integrations.
+
+#### Suggested Improvement
+Replace the hard-coded version in `src/server.ts` with one of:
+- `import pkg from '../package.json' assert { type: 'json' };` (Node 20+ JSON imports, ESM)
+- Read at runtime: `JSON.parse(await readFile(new URL('../package.json', import.meta.url), 'utf-8')).version`
+- Inject at build time via a generated `version.ts` file in `prepare` script
+
+Ensure works in both the source tree and the published `dist/` (path resolution differs).
+
+#### Risk
+small (cosmetic UX, no behavior impact in v0.x). Touches 1 file, easy revert.
+
+#### Status
+proposed
