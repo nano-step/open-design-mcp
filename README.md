@@ -17,7 +17,8 @@ Add the following entry to your MCP client config (OpenCode / Claude Code / Curs
       "command": "npx",
       "args": ["-y", "open-design-mcp"],
       "env": {
-        "OD_DAEMON_URL": "http://localhost:7456",
+        // Pick the line that matches your deployment (see "Choosing OD_DAEMON_URL" below)
+        "OD_DAEMON_URL": "http://ai-open-design:7456",
         "OD_API_TOKEN": "<your-bearer-token>",
         "BYOK_BASE_URL": "https://your-ai-proxy.example.com/v1",
         "BYOK_API_KEY": "<provider-api-key>",
@@ -30,11 +31,32 @@ Add the following entry to your MCP client config (OpenCode / Claude Code / Curs
 
 > The env vars above are documented now so you can wire them once. **In v0.1.0 the server reads none of them** — they are consumed when the BYOK pipeline change ships.
 
+## Choosing `OD_DAEMON_URL`
+
+The right value depends on where the Open Design daemon is running **relative to the MCP server** (which itself runs wherever your coding agent spawns it):
+
+| Your setup | `OD_DAEMON_URL` |
+|---|---|
+| MCP server + OD daemon both run as containers on a shared Docker network (e.g. via [`ai-sandbox-wrapper`](https://github.com/kokorolx/ai-sandbox-wrapper) with `--network ai-sandbox`) — **most common** | `http://ai-open-design:7456` |
+| MCP server runs inside a Docker container, OD daemon runs natively on the host (exposed on host port `7456`) | `http://host.docker.internal:7456` (macOS / Windows Docker Desktop)<br>`http://172.17.0.1:7456` (Linux bridge gateway) |
+| MCP server and OD daemon both run natively on the host (no Docker) | `http://localhost:7456` |
+| OD container started via `ai-run open-design start --expose --port N` to host port `N` | `http://host.docker.internal:N` (from inside another container)<br>`http://localhost:N` (from host) |
+
+**Quick diagnostic** (run from the environment where the MCP server will spawn):
+
+```bash
+curl -fsS http://ai-open-design:7456/ && echo " OK"          # shared docker network
+curl -fsS http://host.docker.internal:7456/ && echo " OK"    # host gateway
+curl -fsS http://localhost:7456/ && echo " OK"               # native
+```
+
+Whichever one returns `200` is your correct `OD_DAEMON_URL`.
+
 ## Environment Variables
 
 | Variable | Purpose | Required (in v0.1.0) |
 |---|---|---|
-| `OD_DAEMON_URL` | Open Design daemon base URL (e.g. `http://localhost:7456`) | No (future BYOK pipeline) |
+| `OD_DAEMON_URL` | Open Design daemon base URL — **see [Choosing `OD_DAEMON_URL`](#choosing-od_daemon_url) above** | No (future BYOK pipeline) |
 | `OD_API_TOKEN` | Bearer token the OD daemon enforces when bound to non-loopback | No (future) |
 | `BYOK_BASE_URL` | OpenAI-compatible AI provider base URL | No (future) |
 | `BYOK_API_KEY` | Provider API key forwarded via OD's `/api/proxy/*/stream` | No (future) |
