@@ -1,0 +1,7 @@
+This subdirectory contains software vendored from:
+  https://github.com/nexu-io/open-design
+  Copyright (c) 2024-2026 Nexu Labs
+  Licensed under Apache License 2.0
+
+Vendored files retain their original copyright headers.
+See VENDORED_FROM.md for the pinned commit, file list, and modifications log.

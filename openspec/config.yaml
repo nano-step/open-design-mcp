@@ -1,20 +1,50 @@
 schema: spec-driven
 
-# Project context (optional)
-# This is shown to AI when creating artifacts.
-# Add your tech stack, conventions, style guides, domain knowledge, etc.
-# Example:
-#   context: |
-#     Tech stack: TypeScript, React, Node.js
-#     We use conventional commits
-#     Domain: e-commerce platform
+context: |
+  Tech stack: TypeScript (Node.js 20+, ESM), zod for schema validation,
+  @modelcontextprotocol/sdk for MCP server, undici for HTTP client, vitest
+  for testing.
 
-# Per-artifact rules (optional)
-# Add custom rules for specific artifacts.
-# Example:
-#   rules:
-#     proposal:
-#       - Keep proposals under 500 words
-#       - Always include a "Non-goals" section
-#     tasks:
-#       - Break tasks into chunks of max 2 hours
+  Project: open-design-mcp — a stdio MCP (Model Context Protocol) server that
+  exposes Open Design daemon's HTTP API as MCP tools, so coding agents like
+  OpenCode, Claude Code, Cursor, and Zed can generate and inspect design
+  artifacts without leaving their chat surface.
+
+  Distribution: published to npm as `open-design-mcp` (unscoped). Consumed via
+  `npx open-design-mcp` in MCP client config. Apache 2.0 license.
+
+  Upstream: vendors a subset of `@open-design/contracts` (private package
+  from nexu-io/open-design, Apache 2.0) — specifically the prompt-composition
+  logic so we can build full system prompts identical to what the OD web UI
+  builds for its BYOK chat flow.
+
+  We use conventional commits. We follow the engineering harness defined in
+  docs/HARNESS.md — every change goes through proposal → deep-design →
+  specs → implement → validate → review → PR → archive.
+
+  Domain knowledge:
+  - OD daemon listens on $OD_DAEMON_URL (default http://localhost:7456)
+  - OD daemon API is auth-protected via $OD_API_TOKEN bearer
+  - OD has two chat paths: /api/chat (requires CLI binary) and
+    /api/proxy/{provider}/stream (BYOK — caller provides systemPrompt).
+  - BYOK is the path we use — keeps the server stateless and avoids CLI
+    install requirements in the daemon container.
+  - composeSystemPrompt() folds 15+ prompt fragments (skill body, design
+    system tokens, memory, discovery rules, official designer prompt,
+    panel/critique block, etc.) into one string. Bypassing it produces
+    visibly inferior designs.
+
+rules:
+  proposal:
+    - State the user-visible problem in one sentence at top.
+    - Include explicit "Non-goals" section (what this change does NOT do).
+    - Link to GitHub issue and any related upstream sources.
+    - Keep under 600 words; details belong in design.md.
+  design:
+    - Decisions must be justified with at least one alternative considered.
+    - Call out which hard gates from HARNESS.md are triggered.
+    - Cite real-world references when adopting a pattern (link + commit SHA).
+  tasks:
+    - Each task is a single PR-sized unit (max ~2 hours).
+    - Tasks must be ordered: if B depends on A, A comes first.
+    - Each task lists its acceptance check (command + expected exit code).

@@ -1,0 +1,55 @@
+{
+  "name": "open-design-mcp",
+  "version": "0.1.0",
+  "description": "MCP stdio server bridging coding agents to Open Design daemon (BYOK flow with full systemPrompt fidelity).",
+  "license": "Apache-2.0",
+  "mcpName": "io.github.nano-step/open-design-mcp",
+  "author": "kokorolx <kokoro.lehoang@gmail.com>",
+  "homepage": "https://github.com/nano-step/open-design-mcp",
+  "bugs": "https://github.com/nano-step/open-design-mcp/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/nano-step/open-design-mcp.git"
+  },
+  "type": "module",
+  "bin": {
+    "open-design-mcp": "dist/src/server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "files": [
+    "dist",
+    "vendor/od-contracts/LICENSE",
+    "vendor/od-contracts/NOTICE",
+    "vendor/od-contracts/VENDORED_FROM.md",
+    "LICENSE",
+    "NOTICE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc && shx chmod +x dist/src/server.js",
+    "prepare": "npm run build",
+    "lint": "eslint src --max-warnings 0",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
+    "watch": "tsc --watch",
+    "vendor:sync": "bash scripts/vendor-sync.sh",
+    "vendor:check": "bash scripts/vendor-check.sh"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "undici": "^7.0.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "eslint": "^9.0.0",
+    "shx": "^0.3.4",
+    "typescript": "^5.6.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^2.1.8"
+  }
+}
