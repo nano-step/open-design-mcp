@@ -8,3 +8,6 @@ build/
 coverage/
 .vscode/
 .idea/
+*.tsbuildinfo
+.vitest-cache/
+.vendor-diff-report-*.txt
