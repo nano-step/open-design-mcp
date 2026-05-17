@@ -14,11 +14,11 @@ Order is enforced by dependencies: a task with `Depends: T-N` cannot start until
 
 **Do:**
 - Create `LICENSE` at repo root containing the full Apache License 2.0 text.
-- Copyright line: `Copyright (c) 2026 nano-step`.
+- Copyright line: `Copyright (c) 2026 kokorolx <kokoro.lehoang@gmail.com>`.
 - Create `NOTICE` at repo root containing:
   ```
   Open Design MCP
-  Copyright (c) 2026 nano-step
+  Copyright (c) 2026 kokorolx <kokoro.lehoang@gmail.com>
 
   This product includes software vendored from nexu-io/open-design.
   See vendor/od-contracts/NOTICE for full attribution.
@@ -214,7 +214,7 @@ Order is enforced by dependencies: a task with `Depends: T-N` cannot start until
   - Accept 1 argument: upstream SHA (or `HEAD`/tag — resolve to SHA).
   - Refuse if `vendor/od-contracts/src/` (when non-empty) has uncommitted changes.
   - Shallow + sparse clone `https://github.com/nexu-io/open-design` into `/tmp/od-vendor-sync-$$`.
-  - Sparse-checkout `packages/contracts/src/{prompts,api,common.ts,index.ts}`.
+  - Sparse-checkout `packages/contracts/src/{prompts,api,common.ts}` (note: `index.ts` excluded per D6 — poisonous barrel).
   - Resolve passed argument to full 40-char SHA.
   - Rsync filtered file set into `vendor/od-contracts/src/` preserving directory structure.
   - Update `VENDORED_FROM.md` with new SHA, ISO timestamp, commit date, commit message.

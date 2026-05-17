@@ -111,12 +111,12 @@ The `bin` field points at `dist/src/server.js`. Future `src/` code imports vendo
 - Single entry point — no bundling benefit.
 - tsc preserves shebang line natively when target file starts with `#!/usr/bin/env node`.
 
-**Build script**:
+**Build script** (final form in D13, here for the rationale):
 ```bash
-"build": "tsc && shx chmod +x dist/server.js"
+"build": "tsc && shx chmod +x dist/src/server.js"
 ```
 
-`shx chmod +x` is needed because tsc does not preserve executable bits.
+`shx chmod +x` is needed because tsc does not preserve executable bits. The path is `dist/src/server.js` (not `dist/server.js`) because `rootDir: "."` in tsconfig preserves the `src/` segment in the output tree — see D6 "Compilation strategy" for why this is required to compile vendored files in the same invocation.
 
 ### D5 — Node minimum: 20
 
@@ -302,7 +302,7 @@ This shape satisfies the smoke test: an MCP client can send `initialize`, receiv
   "description": "MCP stdio server bridging coding agents to Open Design daemon (BYOK flow with full systemPrompt fidelity).",
   "license": "Apache-2.0",
   "mcpName": "io.github.nano-step/open-design-mcp",
-  "author": "nano-step",
+  "author": "kokorolx <kokoro.lehoang@gmail.com>",
   "homepage": "https://github.com/nano-step/open-design-mcp",
   "bugs": "https://github.com/nano-step/open-design-mcp/issues",
   "repository": {

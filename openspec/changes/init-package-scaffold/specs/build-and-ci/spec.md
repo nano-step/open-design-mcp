@@ -17,7 +17,7 @@ Defines the validation ladder commands and CI workflow that gate every PR. Match
 - **AND** lint SHALL report 0 errors AND 0 warnings (`--max-warnings 0`)
 - **AND** typecheck SHALL report 0 errors
 - **AND** at least 1 unit test SHALL pass
-- **AND** build SHALL produce `dist/server.js` with executable bit set
+- **AND** build SHALL produce `dist/src/server.js` with executable bit set
 
 ### Requirement: Lint configuration
 

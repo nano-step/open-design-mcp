@@ -66,7 +66,7 @@ The repository root SHALL carry its own LICENSE and NOTICE files that disclose t
 - **WHEN** the project root is inspected
 - **THEN** a file named `LICENSE` SHALL exist
 - **AND** it SHALL contain the Apache 2.0 license text
-- **AND** the copyright line SHALL read `Copyright (c) 2026 nano-step`
+- **AND** the copyright line SHALL read `Copyright (c) 2026 kokorolx <kokoro.lehoang@gmail.com>`
 
 #### Scenario: Top-level NOTICE references vendor
 
