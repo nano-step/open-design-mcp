@@ -24,42 +24,41 @@ The 13 `.ts` files are copied verbatim from upstream `nexu-io/open-design@776658
 
 **Rationale:** Apache 2.0 §4(b) requires a clear log of modifications. Mixing the imports patch with cosmetic edits would obscure the audit trail.
 
-### VS-3: §4(b) MODIFICATION header location and exact text
+### VS-3: §4(b) MODIFICATION header — actual text produced by `vendor-sync.sh`
 
-For `chat.ts` only, the `vendor-sync.sh` script prepends this header (replacing nothing — upstream has no header itself; the original copyright notice is preserved per §4(c)):
+For `chat.ts` only, `scripts/vendor-sync.sh` prepends this header (verbatim from the script's PATCH_HEADER variable at lines 124-131). The original upstream content immediately follows; original copyright notices are preserved per §4(c):
 
 ```ts
-// =============================================================================
-// MODIFICATION NOTICE (Apache License 2.0, Section 4(b))
-// =============================================================================
-// This file has been modified from its upstream source at
-// nexu-io/open-design@7766582f0bd75d2dce31b2f9db01a482af801897 by:
-//
-//   kokorolx <kokoro.lehoang@gmail.com>, 2026-05-17
-//
-// Modifications:
-//   - Added `.js` suffix to relative imports of ./files, ./comments,
-//     ./research to satisfy Node16 ESM module resolution.
-//
-// The original Apache License 2.0 terms apply to both the unmodified
-// upstream code and the modifications above. See vendor/od-contracts/LICENSE.
-// =============================================================================
+// MODIFICATION (open-design-mcp):
+// Added explicit `.js` extensions on relative imports for Node16
+// moduleResolution. The upstream uses `moduleResolution: "Bundler"`
+// which permits extensionless imports; this package uses Node16 which
+// forbids them (TS2835). Patent grant + license terms unchanged.
+// Modified by: scripts/vendor-sync.sh
+// Modification date: <ISO-8601 timestamp at sync time>
 ```
 
-**Rationale:** Header is self-contained, machine-greppable for audit, and explicitly carries the date + author + change list per §4(b).
+**Greppable invariant:** `head -25 chat.ts | grep -q 'MODIFICATION (open-design-mcp)'` SHALL return exit 0 post-sync.
 
-### VS-4: VENDORED_FROM.md Modifications section format
+**Rationale:** Header is self-contained, machine-greppable for audit, names the modifier (the script — a reproducible authority), and explicitly carries the date per §4(b). The compact form (no decorative banner) keeps source diffs readable.
 
-The script appends an entry under the `## Modifications` heading using this template:
+**Note on v1 drift:** v1 of this design specified a `MODIFICATION NOTICE (Apache License 2.0, Section 4(b))` header with explicit author email and Apache 2.0 cross-reference. That text does NOT match what `vendor-sync.sh` actually emits (the script was finalized in `init-package-scaffold` before this design was written). Per VS-1 (run script as-shipped), this revision aligns the design to the script, not the other way around. The compact form still satisfies Apache 2.0 §4(b) (modification notice present, dated, and attributable).
+
+### VS-4: VENDORED_FROM.md Modifications section — actual text produced
+
+`scripts/vendor-sync.sh` (lines 174-176) writes this Modifications section template:
 
 ```markdown
-- **chat.ts** (2026-05-17): Added `.js` suffix to 3 relative imports
-  (`./files`, `./comments`, `./research`) for Node16 ESM compatibility.
-  Patch applied by `scripts/vendor-sync.sh` v1. License compliance:
-  in-file §4(b) header added.
+## Modifications
+
+- `src/api/chat.ts` — Added `.js` extensions on relative imports for Node16 moduleResolution (see in-file MODIFICATION header).
 ```
 
-**Rationale:** Audit log readable to humans, with a back-link to the script that applied the change. Date matches the in-file MODIFICATION header date.
+**Greppable invariant:** `grep -q '^- \`src/api/chat\.ts\`' VENDORED_FROM.md` SHALL return exit 0 post-sync.
+
+**Rationale:** Audit log readable, back-references the in-file header for full context, uses the full vendored path `src/api/chat.ts` (not just `chat.ts`) so multi-file syncs in the future can disambiguate.
+
+**Note on v1 drift:** v1 of this design described a bolded entry `**chat.ts**` with date and rationale. That does NOT match what the script produces. Per VS-1, this revision aligns the design to the script. The greppable invariant in `scripts/vendor-check.sh` was updated to match.
 
 ### VS-5: HB-3 test coverage — exactly two new integration tests
 
