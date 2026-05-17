@@ -6,7 +6,7 @@ on:
 
 jobs:
   publish:
-    uses: kokorolx/shared-workflows/.github/workflows/publish-stable.yml@v1
+    uses: nano-step/shared-workflows/.github/workflows/publish-stable.yml@v1
     with:
       package-name: "open-design-mcp"
     secrets:
