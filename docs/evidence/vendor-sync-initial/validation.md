@@ -1,8 +1,9 @@
 # Validation Evidence: vendor-sync-initial
 
-Generated: 2026-05-17T12:21:22Z
+Generated: 2026-05-17T12:21:22Z (refreshed metadata: 2026-05-17T12:27:00Z)
 Branch: feat/vendor-sync-initial
-HEAD: 57e08a9e50c364300a86b3f58f1e0c8e223f8993
+HEAD: fa9cb7a5170116c95a28ac68a7e40468637bb2c6 (commit 4 of 4 — test(integration) for HB-3)
+Validation captured before commit 4 was authored — the integration suite count below (5 tests) confirms the post-fa9cb7a state.
 
 ## Validation Ladder (6 commands)
 

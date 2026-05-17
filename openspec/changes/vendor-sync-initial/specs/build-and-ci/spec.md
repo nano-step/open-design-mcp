@@ -29,13 +29,13 @@ After `scripts/vendor-sync.sh` has copied vendored sources into `vendor/od-contr
 #### Scenario: §4(b) header assertion (post-sync only)
 
 - **WHEN** `bash scripts/vendor-check.sh` runs AND `vendor/od-contracts/src/api/chat.ts` exists
-- **THEN** the script SHALL grep the first 25 lines of `chat.ts` for `MODIFICATION NOTICE`
+- **THEN** the script SHALL grep the first 25 lines of `chat.ts` for `MODIFICATION (open-design-mcp)` (matches the exact prefix emitted by `scripts/vendor-sync.sh` line 124)
 - **AND** SHALL exit non-zero if the header is absent
 
 #### Scenario: Modifications log assertion (post-sync only)
 
 - **WHEN** `bash scripts/vendor-check.sh` runs AND `vendor/od-contracts/src/api/chat.ts` exists
-- **THEN** the script SHALL grep `VENDORED_FROM.md` for the regex `^- \*\*chat\.ts\*\*`
+- **THEN** the script SHALL grep `VENDORED_FROM.md` for the regex `^- \`src/api/chat\.ts\`` (matches the exact format emitted by `scripts/vendor-sync.sh` lines 174-176)
 - **AND** SHALL exit non-zero if no Modifications entry is found
 
 ### Requirement: Vendor sync byproducts are gitignored
