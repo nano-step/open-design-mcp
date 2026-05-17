@@ -1,5 +1,7 @@
 # Spec: build-and-ci
 
+> **Revision**: v2. Binary path corrected to `dist/src/server.js` (Oracle F1). tsconfig `rootDir: "."` documented (Oracle F1). Vendor reachability claim weakened (Metis F-4). Integration test prerequisite clarified (Metis F-16).
+
 Defines the validation ladder commands and CI workflow that gate every PR. Matches the HARNESS validation ladder commands.
 
 ## ADDED Requirements
@@ -36,9 +38,9 @@ The repository SHALL use ESLint 9 flat config and SHALL enforce TypeScript-aware
 
 ### Requirement: TypeScript configuration
 
-`tsconfig.json` SHALL enable strict mode and Node16 module resolution.
+`tsconfig.json` SHALL enable strict mode and Node16 module resolution, and SHALL place vendored sources under the same compilation root so they emit to `dist/` alongside `src/`.
 
-#### Scenario: Strict mode
+#### Scenario: Strict mode + Node16
 
 - **WHEN** `tsconfig.json` is read
 - **THEN** `compilerOptions.strict` SHALL be `true`
@@ -46,14 +48,26 @@ The repository SHALL use ESLint 9 flat config and SHALL enforce TypeScript-aware
 - **AND** `compilerOptions.module` SHALL be `"Node16"`
 - **AND** `compilerOptions.moduleResolution` SHALL be `"Node16"`
 - **AND** `compilerOptions.outDir` SHALL be `"./dist"`
-- **AND** `compilerOptions.rootDir` SHALL be `"./src"`
+- **AND** `compilerOptions.rootDir` SHALL be `"."`
 - **AND** `compilerOptions.skipLibCheck` SHALL be `true`
 
-#### Scenario: Vendor types reachable
+#### Scenario: Compilation scope includes vendor
 
-- **WHEN** `npm run typecheck` is executed
-- **THEN** TypeScript SHALL be able to import types from `vendor/od-contracts/src/` via a path mapping or include glob (specific mechanism defined by design)
-- **AND** the typecheck SHALL succeed even when `vendor/od-contracts/src/` is empty (since the scaffold has no code that imports vendored types yet)
+- **WHEN** `tsconfig.json` is read
+- **THEN** `include` SHALL contain both `"src/**/*"` and `"vendor/od-contracts/src/**/*"`
+- **AND** `exclude` SHALL contain `"node_modules"`, `"dist"`, `"tests/**/*"`, and `"**/*.test.ts"`
+
+#### Scenario: Scaffold typecheck does not require vendor source
+
+- **WHEN** `npm run typecheck` runs in the scaffold PR (vendor/od-contracts/src/ contains only `.gitkeep`)
+- **THEN** the typecheck SHALL succeed with exit 0
+- **AND** the scaffold's `src/` code MUST NOT import from `vendor/od-contracts/` (no real vendor files exist yet)
+
+#### Scenario: Compilation strategy SHALL NOT preclude future vendor imports
+
+- **WHEN** the `vendor-sync-initial` change later populates `vendor/od-contracts/src/`
+- **THEN** the existing `tsconfig.json` SHALL allow `src/` code to import from `'../../vendor/od-contracts/src/prompts/system.js'` (or similar relative path) without further config changes
+- **AND** the build SHALL emit those vendored files to `dist/vendor/od-contracts/src/` automatically
 
 ### Requirement: Test runner is vitest
 
@@ -104,12 +118,12 @@ A CI workflow SHALL run on every push and pull request targeting `master`, exerc
 #### Scenario: build script
 
 - **WHEN** `package.json` is read
-- **THEN** `scripts.build` SHALL equal `"tsc && shx chmod +x dist/server.js"`
+- **THEN** `scripts.build` SHALL equal `"tsc && shx chmod +x dist/src/server.js"`
 
 #### Scenario: Shebang preserved
 
 - **WHEN** `npm run build` completes
-- **THEN** `dist/server.js` SHALL start with the line `#!/usr/bin/env node`
+- **THEN** `dist/src/server.js` SHALL start with the line `#!/usr/bin/env node`
 - **AND** the file mode SHALL include the user-execute bit (`0o100` and higher)
 
 ### Requirement: Integration test placeholder
@@ -126,10 +140,12 @@ A minimal integration test SHALL exercise the built binary via the MCP SDK clien
 
 - **WHEN** the project root is inspected
 - **THEN** at least one file matching `tests/integration/*.test.ts` SHALL exist
-- **AND** the test SHALL spawn `node dist/server.js` and send a JSON-RPC `initialize` request, asserting the response contains `serverInfo.name === "open-design-mcp"`
-- **AND** the test SHALL clean up the subprocess on completion
+- **AND** the test SHALL spawn `node dist/src/server.js` and send a JSON-RPC `initialize` request, asserting the response contains `serverInfo.name === "open-design-mcp"` and `serverInfo.version === "0.1.0"`
+- **AND** the test SHALL also call `tools/list` and assert `result.tools` is an empty array
+- **AND** the test SHALL clean up the subprocess on completion (no leftover child processes, no hung file handles)
 
 #### Scenario: Integration test command
 
 - **WHEN** `package.json` is read
 - **THEN** `scripts["test:integration"]` SHALL equal `"vitest run --config vitest.integration.config.ts"`
+- **AND** the command SHALL assume a prior `npm run build` has produced `dist/src/server.js`; the CI workflow sequences build before test:integration explicitly (the script itself does not invoke build for fast local iteration)

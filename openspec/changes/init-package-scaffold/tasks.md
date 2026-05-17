@@ -1,5 +1,7 @@
 # Tasks: init-package-scaffold
 
+> **Revision**: v2. Applies HARNESS deep-design verdicts (Metis + Oracle). Key task changes: T-2 acceptance no longer depends on T-7 (circular dep removed), T-3 spells out the full devDependency list, T-3b added for `.nvmrc`, T-5 stub style explicitly safe under strict lint, T-2 vendor LICENSE pulled from upstream (not copied from top-level), T-10 asserts concrete protocolVersion shape.
+
 Ordered checklist for implementing the scaffold. Each task is one PR-sized commit. Each task has an explicit acceptance check (command + expected exit code) that the implementor and reviewer can run.
 
 Order is enforced by dependencies: a task with `Depends: T-N` cannot start until that task is green.
@@ -33,7 +35,11 @@ Order is enforced by dependencies: a task with `Depends: T-N` cannot start until
 
 **Do:**
 - Create directory `vendor/od-contracts/src/`.
-- Create `vendor/od-contracts/LICENSE` — copy the same Apache 2.0 text used in T-1.
+- Create `vendor/od-contracts/LICENSE` — **download the LICENSE file from `nexu-io/open-design@7766582`** (not a copy of the top-level LICENSE). The upstream LICENSE file is the authoritative copy under Apache 2.0 §4(a). One-liner:
+  ```bash
+  curl -fsSL https://raw.githubusercontent.com/nexu-io/open-design/7766582f0bd75d2dce31b2f9db01a482af801897/LICENSE -o vendor/od-contracts/LICENSE
+  ```
+  (If upstream has no LICENSE at the pinned commit, fall back to the canonical Apache 2.0 text at https://www.apache.org/licenses/LICENSE-2.0.txt and document in T-2 evidence.)
 - Create `vendor/od-contracts/NOTICE`:
   ```
   This subdirectory contains software vendored from:
@@ -42,16 +48,29 @@ Order is enforced by dependencies: a task with `Depends: T-N` cannot start until
     Licensed under Apache License 2.0
 
   Vendored files retain their original copyright headers.
-  See VENDORED_FROM.md for the pinned commit and file list.
+  See VENDORED_FROM.md for the pinned commit, file list, and modifications log.
   ```
-- Create `vendor/od-contracts/VENDORED_FROM.md` with all required fields:
-  - `Upstream Repository`, `Upstream License`, `Upstream Path` (per file), `Vendored on` (ISO timestamp), `Upstream Commit SHA: 7766582f0bd75d2dce31b2f9db01a482af801897`, `Upstream Commit Date`, `Upstream Commit Message`, `Files Vendored` (list 13 files with target paths), `Re-sync Procedure` (pointer to `scripts/vendor-sync.sh`).
+- Create `vendor/od-contracts/VENDORED_FROM.md` with these required fields (template — fill values as listed):
+  - `Upstream Repository: https://github.com/nexu-io/open-design`
+  - `Upstream License: Apache-2.0`
+  - `Upstream Commit SHA: 7766582f0bd75d2dce31b2f9db01a482af801897`
+  - `Upstream Commit Date: 2026-05-17T12:28:18+09:00`
+  - `Upstream Commit Message: chore(ci): scope nix-check workflow permissions to contents:read (#1870)`
+  - `Vendored on: <ISO timestamp of when you ran this task>`
+  - `Files Vendored:` section listing the 13 target paths (per design.md D6 table; explicitly EXCLUDE `src/index.ts`).
+  - `Modifications:` section — empty in scaffold PR. Header line: `(none — populated by scripts/vendor-sync.sh during vendor-sync-initial change)`
+  - `Re-sync Procedure:` section pointing at `scripts/vendor-sync.sh <new-sha>`.
 - Create `vendor/od-contracts/README.md` with: purpose, file list, sync command, license summary.
 - Add `vendor/od-contracts/src/.gitkeep` so the empty directory is committed.
 
-**Acceptance:**
-- `bash scripts/vendor-check.sh` (created in T-7) → exit 0
-- Manual check: `cat vendor/od-contracts/VENDORED_FROM.md | grep -E "^Upstream Commit SHA: [a-f0-9]{40}$"` → exit 0
+**Acceptance** (inline, does not depend on T-7):
+- `test -f vendor/od-contracts/LICENSE && test -s vendor/od-contracts/LICENSE` → exit 0
+- `test -f vendor/od-contracts/NOTICE && test -s vendor/od-contracts/NOTICE` → exit 0
+- `test -f vendor/od-contracts/VENDORED_FROM.md && test -s vendor/od-contracts/VENDORED_FROM.md` → exit 0
+- `test -f vendor/od-contracts/README.md` → exit 0
+- `test -d vendor/od-contracts/src && test -f vendor/od-contracts/src/.gitkeep` → exit 0
+- `grep -qE '^Upstream Commit SHA: [a-f0-9]{40}$' vendor/od-contracts/VENDORED_FROM.md` → exit 0
+- `grep -q '7766582f0bd75d2dce31b2f9db01a482af801897' vendor/od-contracts/VENDORED_FROM.md` → exit 0
 
 ---
 
@@ -60,17 +79,42 @@ Order is enforced by dependencies: a task with `Depends: T-N` cannot start until
 **Depends:** T-1
 
 **Do:**
-- Create `package.json` per locked shape in `design.md` § D6 (note correct SDK dependency: `@modelcontextprotocol/sdk` ^1.29.0).
-- Pin engines: `"engines": { "node": ">=20" }`.
-- Add `"type": "module"`, `"bin": { "open-design-mcp": "dist/server.js" }`.
-- Add `"files"` whitelist (per spec build-and-ci): `dist`, `vendor/od-contracts/LICENSE`, `vendor/od-contracts/NOTICE`, `vendor/od-contracts/VENDORED_FROM.md`, `LICENSE`, `NOTICE`, `README.md`.
-- Scripts: `build`, `prepare`, `lint`, `typecheck`, `test`, `test:integration`, `watch`, `vendor:sync`, `vendor:check`.
-- Create `tsconfig.json` with strict mode, target ES2022, module Node16, moduleResolution Node16, outDir `./dist`, rootDir `./src`, include `["src/**/*"]`.
+- Create `package.json` matching the **locked shape in `design.md` § D13** byte-for-byte (or with only trivial formatting differences). Key fields to verify:
+  - `"name": "open-design-mcp"`
+  - `"version": "0.1.0"`
+  - `"license": "Apache-2.0"`
+  - `"type": "module"`
+  - `"bin": { "open-design-mcp": "dist/src/server.js" }`
+  - `"engines": { "node": ">=20" }`
+  - `"files": ["dist", "vendor/od-contracts/LICENSE", "vendor/od-contracts/NOTICE", "vendor/od-contracts/VENDORED_FROM.md", "LICENSE", "NOTICE", "README.md"]`
+  - `"scripts"`: `build`, `prepare`, `lint`, `typecheck`, `test`, `test:integration`, `watch`, `vendor:sync`, `vendor:check`
+  - `"dependencies"`: `@modelcontextprotocol/sdk` ^1.29.0, `undici` ^7.0.0, `zod` ^3.23.8
+  - `"devDependencies"`: `@types/node` ^20.10.0, `@vitest/coverage-v8` ^2.1.8, `eslint` ^9.0.0, `shx` ^0.3.4, `typescript` ^5.6.0, `typescript-eslint` ^8.0.0, `vitest` ^2.1.8
+
+- Create `tsconfig.json` matching the **locked shape in `design.md` § D6** "Compilation strategy" section:
+  - `target: "ES2022"`, `module: "Node16"`, `moduleResolution: "Node16"`
+  - `rootDir: "."`, `outDir: "./dist"`
+  - `strict: true`, `skipLibCheck: true`, `esModuleInterop: true`, `forceConsistentCasingInFileNames: true`, `resolveJsonModule: true`, `declaration: false`
+  - `include: ["src/**/*", "vendor/od-contracts/src/**/*"]`
+  - `exclude: ["node_modules", "dist", "**/*.test.ts", "tests/**/*"]`
+
 - Append to `.gitignore`: `dist/`, `coverage/`, `*.tsbuildinfo`, `.vitest-cache/`.
 
 **Acceptance:**
-- `node -e "const p = JSON.parse(require('fs').readFileSync('package.json','utf8')); if(p.name!=='open-design-mcp')process.exit(1); if(p.type!=='module')process.exit(1); if(!p.bin['open-design-mcp'])process.exit(1); if(p.engines.node!=='>=20')process.exit(1); console.log('ok')"` → prints `ok`, exit 0
-- `node -e "const t = JSON.parse(require('fs').readFileSync('tsconfig.json','utf8')); if(t.compilerOptions.strict!==true)process.exit(1); console.log('ok')"` → prints `ok`, exit 0
+- `node -e "const p = JSON.parse(require('fs').readFileSync('package.json','utf8')); if(p.name!=='open-design-mcp')process.exit(1); if(p.type!=='module')process.exit(1); if(p.bin['open-design-mcp']!=='dist/src/server.js')process.exit(1); if(p.engines.node!=='>=20')process.exit(1); if(!p.dependencies['@modelcontextprotocol/sdk'])process.exit(1); if(!p.devDependencies['shx'])process.exit(1); if(!p.devDependencies['typescript-eslint'])process.exit(1); console.log('ok')"` → prints `ok`, exit 0
+- `node -e "const t = JSON.parse(require('fs').readFileSync('tsconfig.json','utf8')); if(t.compilerOptions.strict!==true)process.exit(1); if(t.compilerOptions.module!=='Node16')process.exit(1); if(t.compilerOptions.rootDir!=='.')process.exit(1); console.log('ok')"` → prints `ok`, exit 0
+
+---
+
+## T-3b: .nvmrc
+
+**Depends:** T-1
+
+**Do:**
+- Create `.nvmrc` at repo root containing the single line `20`.
+
+**Acceptance:**
+- `test "$(cat .nvmrc)" = "20"` → exit 0
 
 ---
 
@@ -104,13 +148,22 @@ Order is enforced by dependencies: a task with `Depends: T-N` cannot start until
   - Adds SIGINT + SIGTERM handlers that call `transport.close()` and `process.exit(0)` within 2 seconds
   - Logs `"[open-design-mcp] starting on stdio"` then (after connect) `"[open-design-mcp] ready"` to **stderr** only
 - Create `src/tools/.gitkeep` (placeholder folder).
-- Create stubs `src/od-client.ts` and `src/pipeline.ts` — each exports a single placeholder function with a TODO comment and an `// @ts-expect-error` or void return so they typecheck cleanly without external dependencies.
+- Create stubs `src/od-client.ts` and `src/pipeline.ts`. To stay lint-clean under `tseslint.configs.strict` (no `@ts-expect-error`, no empty functions, no unused vars), use the following exact pattern in each stub:
+  ```typescript
+  /**
+   * od-client: HTTP wrapper for the Open Design daemon.
+   * Implemented in the BYOK pipeline change. Exported as a typed
+   * placeholder so the module is non-empty and consumers can typecheck.
+   */
+  export const OD_CLIENT_PLACEHOLDER = 'not-yet-implemented' as const;
+  ```
+  Adjust the name + JSDoc for `pipeline.ts`. No `// @ts-expect-error`, no `function () {}`, no empty objects.
 
 **Acceptance:**
 - `npm run build` → exit 0
-- `head -1 dist/server.js` → `#!/usr/bin/env node`
-- `[ -x dist/server.js ]` → exit 0
-- `git grep "console.log" src/` → no matches (exit 1 is good)
+- `head -1 dist/src/server.js` → `#!/usr/bin/env node`
+- `[ -x dist/src/server.js ]` → exit 0
+- `git grep -n "console.log" src/` → no matches (exit 1 is the success signal here)
 
 ---
 
@@ -141,7 +194,8 @@ Order is enforced by dependencies: a task with `Depends: T-N` cannot start until
   - Exit 1 if `vendor/od-contracts/VENDORED_FROM.md` missing or empty.
   - Exit 1 unless `VENDORED_FROM.md` contains a 40-char lowercase hex SHA on a line matching `^Upstream Commit SHA: [a-f0-9]{40}$`.
   - Exit 1 if top-level `LICENSE` or `NOTICE` missing.
-  - Exit 0 otherwise; print a single-line "vendor-check: ok" message.
+  - Exit 0 otherwise; print a single-line `"vendor-check: ok"` message to stdout.
+- Note: per-file copyright header verification is intentionally **out of scope** in this PR (Metis F-6 — vacuous when vendor/src is empty). It is deferred to the `vendor-sync-initial` change, where the script will be extended to verify each `.ts` file carries an upstream copyright header.
 - Make script executable (`chmod +x`).
 
 **Acceptance:**
@@ -207,14 +261,15 @@ Order is enforced by dependencies: a task with `Depends: T-N` cannot start until
   });
   ```
 - Create `tests/integration/initialize-handshake.test.ts`:
-  - Spawns `node dist/server.js` as subprocess.
+  - Spawns `node dist/src/server.js` as subprocess.
   - Uses `Client` + `StdioClientTransport` from `@modelcontextprotocol/sdk` to call `initialize` and `tools/list`.
-  - Asserts response shape: `serverInfo.name === "open-design-mcp"`, `tools` is empty array.
+  - Asserts: `serverInfo.name === "open-design-mcp"`, `serverInfo.version === "0.1.0"`, `protocolVersion` matches `^\d{4}-\d{2}-\d{2}$`, `tools` is `[]`.
+  - Optionally waits for stderr line `"[open-design-mcp] ready"` before sending `initialize` to avoid stdio race (Oracle F9).
   - Cleans up subprocess in `afterAll`.
 
 **Acceptance:**
 - `npm run build && npm run test:integration` → exit 0
-- Assertion: server responds with `serverInfo.name === "open-design-mcp"` and `tools: []`
+- Assertion: server responds with `serverInfo.name === "open-design-mcp"`, `serverInfo.version === "0.1.0"`, `protocolVersion` matching `^\d{4}-\d{2}-\d{2}$`, and `tools/list` returns `result.tools` as an empty array.
 
 ---
 

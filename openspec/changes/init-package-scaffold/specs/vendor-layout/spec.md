@@ -1,5 +1,7 @@
 # Spec: vendor-layout
 
+> **Revision**: v2. File count updated to 13 (artifacts.ts added, index.ts removed — Oracle F2). Reachability claim weakened to "SHALL NOT preclude" until vendor-sync-initial lands (Metis F-4). Vendor LICENSE source clarified (Metis F-9).
+
 Defines the on-disk shape, license artifacts, and integrity invariants of `vendor/od-contracts/`, plus the `scripts/vendor-sync.sh` and `scripts/vendor-check.sh` scripts. This PR creates the directory and metadata; copying the actual upstream `.ts` sources is a follow-up change (`vendor-sync-initial`).
 
 ## ADDED Requirements
@@ -32,8 +34,28 @@ The repository SHALL contain a `vendor/od-contracts/` directory with the mandato
 - **THEN** it SHALL contain a field `Upstream Repository: https://github.com/nexu-io/open-design`
 - **AND** it SHALL contain a field `Upstream Commit SHA: 7766582f0bd75d2dce31b2f9db01a482af801897`
 - **AND** it SHALL contain a field `Upstream Commit Date:` followed by an ISO-8601 timestamp
-- **AND** it SHALL contain a `Files Vendored:` section listing the 13 target paths
+- **AND** it SHALL contain a `Files Vendored:` section listing the 13 target paths (7 runtime + 6 type-only — see design.md D6 table)
+- **AND** it SHALL contain a `Modifications:` section documenting any in-vendor patches (initially empty in scaffold PR; populated by `vendor-sync.sh` when it patches `chat.ts` extensionless imports in `vendor-sync-initial`)
 - **AND** it SHALL contain a `Re-sync Procedure:` section pointing at `scripts/vendor-sync.sh`
+
+#### Scenario: File list matches design D6
+
+- **WHEN** the `Files Vendored:` section is read
+- **THEN** it SHALL list these 13 paths exactly:
+  - `src/prompts/system.ts`
+  - `src/prompts/official-system.ts`
+  - `src/prompts/discovery.ts`
+  - `src/prompts/directions.ts`
+  - `src/prompts/deck-framework.ts`
+  - `src/prompts/media-contract.ts`
+  - `src/api/projects.ts`
+  - `src/api/chat.ts`
+  - `src/api/files.ts`
+  - `src/api/comments.ts`
+  - `src/api/research.ts`
+  - `src/api/artifacts.ts`
+  - `src/common.ts`
+- **AND** it MUST NOT list `src/index.ts` (excluded as a poisonous barrel — see design.md D6)
 
 ### Requirement: Top-level repository attribution
 

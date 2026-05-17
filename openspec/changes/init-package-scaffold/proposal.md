@@ -1,5 +1,7 @@
 # Proposal: init-package-scaffold
 
+> **Revision**: v2 (after HARNESS deep-design pass). Changes from v1: external-providers hard gate removed (premature — Metis F-14). Architecture corrections live in design.md v2. No scope change.
+
 > Open Design MCP has a GitHub repo and engineering harness but no code yet — every downstream feature is blocked until the npm package scaffolding, MCP server entry point, vendor layout, and CI gate exist.
 
 ## Problem
@@ -47,10 +49,13 @@ Per `docs/HARNESS.md`:
 
 | Hard gate | Why triggered | Mitigation |
 |---|---|---|
-| **public-api-contracts** | MCP tool schema surface defined in this PR (server name, capability advertisement) | Server initially advertises empty tools list; schema growth tracked per-tool in dedicated changes. |
-| **external-providers** | Future BYOK pipeline calls external AI providers via OD's `/api/proxy/*` route — scaffold establishes the env var contract (`OD_DAEMON_URL`, `OD_API_TOKEN`, `BYOK_*`) | Document env vars in README; no secrets in code or test fixtures. |
+| **public-api-contracts** | MCP tool schema surface defined in this PR (server name, version, capability advertisement, empty tools list response shape) | Server advertises empty tools list; future tool schemas land per-tool in dedicated changes. |
 
-Not triggered: `auth` (no user auth in this PR), `data-model` (no persistence), `audit-security` (no logging of user data this PR).
+Not triggered:
+- `auth` — no user auth in this PR.
+- `data-model` — no persistence.
+- `audit-security` — no user-data logging.
+- `external-providers` — this PR documents env vars (`OD_DAEMON_URL`, `OD_API_TOKEN`, `BYOK_*`) in README but **no code consumes them**. The hard gate fires in the BYOK pipeline change when code actually reads these values. (Revised v2 — Metis F-14.)
 
 ## Lane classification
 
