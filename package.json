@@ -18,6 +18,9 @@
   "engines": {
     "node": ">=20"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "files": [
     "dist",
     "vendor/od-contracts/LICENSE",
@@ -30,6 +33,7 @@
   "scripts": {
     "build": "tsc && shx chmod +x dist/src/server.js",
     "prepare": "npm run build",
+    "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run build && bash scripts/vendor-check.sh && npm run test:integration",
     "lint": "eslint src --max-warnings 0",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
