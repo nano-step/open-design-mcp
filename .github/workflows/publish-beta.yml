@@ -1,0 +1,13 @@
+name: Publish Beta
+
+on:
+  push:
+    branches: [beta]
+
+jobs:
+  publish:
+    uses: kokorolx/shared-workflows/.github/workflows/publish-beta.yml@v1
+    with:
+      package-name: "open-design-mcp"
+    secrets:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
