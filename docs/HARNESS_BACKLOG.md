@@ -252,3 +252,45 @@ proposed
 #### Decisions taken now
 - v0.4.0 stays published. Re-plan version namespace: PR-F final ship will be whatever publish-stable lands on after PR-B..PR-E merge through (estimated v0.5.0 — PR-B is `chore:` patch, PR-C/D/E each minor-bump).
 - PR-F task updated to drop the literal "release v0.4.0" wording.
+
+---
+
+### HB-9: Integration test scaffold should auto-provide OD_DAEMON_URL
+
+#### Discovered While
+byok-pipeline-tool PR-C (2026-05-18). Adding `loadCoreConfig()` to `src/server.ts` made every existing integration test spawn break because `tests/integration/initialize-handshake.test.ts` did not supply `OD_DAEMON_URL` to its `StdioClientTransport`. Tests passed locally (maintainer shell had it set) but failed with clean env. Fix required hoisting a shared mock OD server into the test file.
+
+#### Current Pain
+Every new integration test in this repo will need to remember to:
+1. Start a mock OD server
+2. Pass `OD_DAEMON_URL: mock.url` through the transport's `env` option
+3. Close the mock in `afterAll`
+
+Forgetting any step = `MCP error -32000: Connection closed` with no obvious clue why.
+
+#### Suggested Improvement
+Add a shared helper `tests/integration/helpers/spawn-server.ts` exporting:
+
+```typescript
+export async function spawnTestServer(opts?: { extraEnv?: Record<string, string> }): Promise<{
+  transport: StdioClientTransport;
+  client: Client;
+  mock: MockOdServer;
+  close: () => Promise<void>;
+}>
+```
+
+Test files use:
+```typescript
+const { client, mock, close } = await spawnTestServer();
+afterAll(() => close());
+mock.handle('GET', '/api/projects', ...);
+```
+
+This collapses ~30 lines of setup per test file to 2.
+
+#### Risk
+tiny (test infrastructure only). Eliminates a class of "passes locally, fails CI" bugs.
+
+#### Status
+proposed

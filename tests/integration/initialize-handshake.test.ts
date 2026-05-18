@@ -4,8 +4,17 @@ import { resolve } from 'node:path';
 import { existsSync } from 'node:fs';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { startMockOdServer, type MockOdServer } from './helpers/od-mock-server.js';
 
 const BIN = resolve(__dirname, '../../dist/src/server.js');
+
+let sharedMock: MockOdServer;
+beforeAll(async () => {
+  sharedMock = await startMockOdServer();
+});
+afterAll(async () => {
+  await sharedMock.close();
+});
 
 describe('open-design-mcp initialize handshake', () => {
   let client: Client;
@@ -20,6 +29,10 @@ describe('open-design-mcp initialize handshake', () => {
     transport = new StdioClientTransport({
       command: 'node',
       args: [BIN],
+      env: {
+        PATH: process.env.PATH ?? '',
+        OD_DAEMON_URL: sharedMock.url,
+      },
     });
     client = new Client({ name: 'integration-test', version: '0.0.0' });
     await client.connect(transport);
@@ -41,9 +54,12 @@ describe('open-design-mcp initialize handshake', () => {
     expect(proto).toBeDefined();
   });
 
-  it('lists zero tools', async () => {
+  it('lists the 2 read-only tools (PR-C)', async () => {
     const result = await client.listTools();
-    expect(result.tools).toEqual([]);
+    expect(result.tools.map((t) => t.name).sort()).toEqual([
+      'od_get_project',
+      'od_list_projects',
+    ]);
   });
 
   it('rejects resources/list with -32601 (capability not advertised)', async () => {
@@ -58,7 +74,10 @@ describe('open-design-mcp signal handling', () => {
       if (!existsSync(BIN)) {
         throw new Error(`Built binary not found at ${BIN}. Run \`npm run build\` first.`);
       }
-      const child = spawn('node', [BIN], { stdio: ['pipe', 'pipe', 'pipe'] });
+      const child = spawn('node', [BIN], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        env: { ...process.env, OD_DAEMON_URL: sharedMock.url },
+      });
       const pid = child.pid!;
       expect(pid).toBeGreaterThan(0);
 
