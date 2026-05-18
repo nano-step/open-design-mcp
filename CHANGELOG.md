@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.4.1] — 2026-05-18
+
+### Documentation
+- docs(harness): add HB-6 basic-auth OD + HB-7 test env-leak gap (#14) (#15)
+
+**Install:** `npm install open-design-mcp@0.4.1`
+
+---
+
 ## [0.4.0] — 2026-05-18
 
 ### Added

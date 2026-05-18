@@ -1,6 +1,6 @@
 {
   "name": "open-design-mcp",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "MCP stdio server bridging coding agents to Open Design daemon (BYOK flow with full systemPrompt fidelity).",
   "license": "Apache-2.0",
   "mcpName": "io.github.nano-step/open-design-mcp",
