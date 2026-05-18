@@ -9,7 +9,9 @@ export function mapErrorToToolResult(err: unknown): ToolErrorResult {
   if (err instanceof OdHttpError) {
     const text =
       err.status === 401
-        ? 'OD auth failed — check OD_API_TOKEN'
+        ? (process.env.OD_AUTH_MODE === 'basic'
+            ? 'OD auth failed — check OD_BASIC_USER/OD_BASIC_PASS'
+            : 'OD auth failed — check OD_API_TOKEN')
         : err.status === 403
           ? 'OD rejected request (SSRF protection?)'
           : err.status === 404
