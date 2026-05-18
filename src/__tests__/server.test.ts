@@ -30,6 +30,22 @@ describe('server.ts source invariants', () => {
     expect(source).toMatch(/process\.stderr\.write/);
     expect(source).not.toMatch(/process\.stdout\.write/);
   });
+
+  it('wires the tool orchestrator registerAllTools', () => {
+    expect(source).toContain('registerAllTools(server, client)');
+  });
+
+  it('loads core config via loadCoreConfig()', () => {
+    expect(source).toContain('loadCoreConfig()');
+  });
+
+  it('instantiates OdClient', () => {
+    expect(source).toContain('new OdClient(');
+  });
+
+  it('does not use the old empty-tools workaround', () => {
+    expect(source).not.toContain('setRequestHandler(ListToolsRequestSchema');
+  });
 });
 
 describe('stubs', () => {
