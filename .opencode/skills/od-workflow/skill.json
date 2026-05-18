@@ -1,6 +1,6 @@
 {
   "name": "od-workflow",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Multi-turn Open Design playbook for OpenCode subagents. Choreographs an LLM through OD's full discovery → brand-extraction → TodoWrite plan → checklist → 5-dim critique → artifact emit arc, using OpenCode's native tools (TodoWrite/Read/Write/Bash/WebFetch) + the open-design-mcp server's od_* tools. Use this when a user wants the OD experience — interactive design briefs with questions asked first, brand-aware multi-page consistency, planned execution with self-critique — rather than the single-shot od_generate_design call.",
   "compatibility": "OpenCode (with subagent + TodoWrite/Read/Write/Bash/WebFetch tools) + open-design-mcp installed + an Open Design daemon reachable at OD_DAEMON_URL",
   "tags": [
