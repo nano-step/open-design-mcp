@@ -14,6 +14,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.10.1] — 2026-05-18
+
+### Other
+- chore(openspec): archive od-auth-modes change
+
+**Install:** `npm install open-design-mcp@0.10.1`
+
+---
+
 ## [0.10.0] — 2026-05-18
 
 ### Added
