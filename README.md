@@ -72,12 +72,38 @@ Whichever one returns `200` is your correct `OD_DAEMON_URL`.
 |---|---|---|---|
 | `OD_DAEMON_URL` | Open Design daemon base URL — **see [Choosing `OD_DAEMON_URL`](#choosing-od_daemon_url) above** | **all tools** (validated eagerly at startup) | — |
 | `OD_API_TOKEN` | Bearer token the OD daemon enforces when bound to non-loopback | optional | `""` (no auth header sent) |
+| `OD_AUTH_MODE` | Auth mode: `none`, `bearer`, or `basic`. Auto-derived if unset (token set → `bearer`; basic creds set → `basic`; neither → `none`) | optional | inferred |
+| `OD_BASIC_USER` | HTTP Basic Auth username | `OD_AUTH_MODE=basic` | — |
+| `OD_BASIC_PASS` | HTTP Basic Auth password | `OD_AUTH_MODE=basic` | — |
 | `BYOK_BASE_URL` | OpenAI-compatible AI provider base URL | `od_generate_design` only (validated lazily) | — |
 | `BYOK_API_KEY` | Provider API key forwarded via OD's `/api/proxy/*/stream` | `od_generate_design` only | — |
 | `BYOK_MODEL` | Model id (e.g. `open-design`, `claude-sonnet-4-6`) | `od_generate_design` only | — |
 | `BYOK_PROVIDER` | One of `openai` / `anthropic` / `azure` / `google` / `ollama` | optional | `openai` |
 
 The server fails fast with a clear stderr message if `OD_DAEMON_URL` is missing or invalid. BYOK vars are checked only when `od_generate_design` is called — a missing var yields a friendly tool-level error (`isError: true`, text `"BYOK not configured: missing ..."`), never a crash.
+
+### Hosted Open Design deployment (HTTP Basic Auth)
+
+If the OD daemon is behind a reverse proxy with HTTP Basic Auth (e.g. the publicly-hosted instance at `https://od.thnkandgrow.com/`), set `OD_AUTH_MODE=basic` with the matching credentials:
+
+```jsonc
+{
+  "mcp": {
+    "open-design": {
+      "command": "npx",
+      "args": ["-y", "open-design-mcp"],
+      "env": {
+        "OD_DAEMON_URL": "https://od.thnkandgrow.com/",
+        "OD_AUTH_MODE": "basic",
+        "OD_BASIC_USER": "<your-username>",
+        "OD_BASIC_PASS": "<your-password>"
+      }
+    }
+  }
+}
+```
+
+The server emits `Authorization: Basic <base64(user:pass)>` on every request to the OD daemon. Embedded credentials in the URL (`https://user:pass@host/`) are rejected at startup — use the env vars instead.
 
 ## Development
 
