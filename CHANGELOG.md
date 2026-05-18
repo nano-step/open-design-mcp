@@ -26,6 +26,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.12.2] — 2026-05-18
+
+### Fixed
+- fix(generate-design): raise default timeout to 600s, env-configurable, partial-result recovery on abort (closes #33) (#35)
+
+**Install:** `npm install open-design-mcp@0.12.2`
+
+---
+
 ## [0.12.1] — 2026-05-18
 
 ### Other
