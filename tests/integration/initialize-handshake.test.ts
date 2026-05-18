@@ -54,11 +54,13 @@ describe('open-design-mcp initialize handshake', () => {
     expect(proto).toBeDefined();
   });
 
-  it('lists the 2 read-only tools (PR-C)', async () => {
+  it('lists the 4 tools (PR-D)', async () => {
     const result = await client.listTools();
     expect(result.tools.map((t) => t.name).sort()).toEqual([
       'od_get_project',
+      'od_lint_artifact',
       'od_list_projects',
+      'od_save_artifact',
     ]);
   });
 
