@@ -29,6 +29,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.13.1] — 2026-05-18
+
+### Other
+- chore(openspec): archive add-od-workflow-skill
+
+**Install:** `npm install open-design-mcp@0.13.1`
+
+---
+
 ## [0.13.0] — 2026-05-18
 
 ### Added
