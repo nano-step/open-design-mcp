@@ -141,3 +141,72 @@ small (cosmetic UX, no behavior impact in v0.x). Touches 1 file, easy revert.
 
 #### Status
 proposed
+
+---
+
+### HB-6: Support HTTP Basic Auth for hosted Open Design deployments
+
+#### Discovered While
+byok-pipeline-tool PR-A planning (2026-05-18). User flagged the publicly-hosted OD daemon at `https://od.thnkandgrow.com/` which sits behind HTTP Basic Auth (browser-prompt `Authorization: Basic <base64(user:pass)>` style), not a bearer token. The current OpenSpec design (`openspec/changes/byok-pipeline-tool/design.md` §B7) only models bearer tokens via `OD_API_TOKEN` → `Authorization: Bearer <token>`.
+
+#### Current Pain
+Anyone pointing `OD_DAEMON_URL` at a hosted OD instance protected by Basic Auth will hit a 401 from every tool call. They cannot work around it with `OD_API_TOKEN` because that emits the wrong header scheme. Workarounds (embedding `user:pass@` in the URL) are fragile across `fetch` implementations and leak credentials into logs/error messages.
+
+This is the **first deployment mode (hosted, internet-exposed)** the project supports beyond local Docker / loopback — and the design didn't anticipate it.
+
+#### Suggested Improvement
+File a follow-up OpenSpec change `od-auth-modes` (lane: `normal`, change-type: `user-feature`) after `byok-pipeline-tool` archives. Sketch:
+
+1. **New env vars** (additive, all optional):
+   - `OD_AUTH_MODE`: `none` | `bearer` | `basic` (default `bearer` if `OD_API_TOKEN` set, else `none`)
+   - `OD_BASIC_USER` + `OD_BASIC_PASS` (required when mode = `basic`)
+2. **`src/od-client.ts`** header logic becomes:
+   ```ts
+   if (mode === 'bearer' && token) headers.Authorization = `Bearer ${token}`;
+   else if (mode === 'basic')      headers.Authorization = `Basic ${Buffer.from(`${user}:${pass}`).toString('base64')}`;
+   ```
+3. **README**: add a row to the env-vars table + a deployment-mode example for `https://od.thnkandgrow.com/`.
+4. **Tests**: extend `od-client.test.ts` with three header-shape assertions (none / bearer / basic) using mocked `fetch`.
+5. **Smoke test**: add an entry to `docs/evidence/<change>/smoke-test.md` that exercises one tool against the hosted instance.
+
+**Out of scope for this backlog item, in scope for the change**:
+- Credential masking in error messages (must never echo `OD_BASIC_PASS`, even truncated)
+- URL-embedded credentials (`https://user:pass@host/`) — explicitly REJECT at startup with friendly error; force users to use env vars
+- mTLS / OAuth — separate change, not v0.5
+
+#### Risk
+small. Additive only; existing bearer-token flow unchanged when `OD_AUTH_MODE` defaults. Credential-handling lives in one file (`od-client.ts`). Touches design §B7 (lock-update) and §B14 (logging) but no architectural shift.
+
+#### Status
+proposed
+
+---
+
+### HB-7: Test environment must not inherit shell env vars that hide module-load bugs
+
+#### Discovered While
+byok-pipeline-tool PR-A CI failure (2026-05-18). Local `npm test` passed with 32/32 because the maintainer's shell had `OD_DAEMON_URL` set (for the live OD daemon at `http://ai-open-design:7456`). CI runners don't set it → the eager `coreConfig` singleton called `process.exit(1)` at module load → vitest's harness rejected the test file with `process.exit unexpectedly called`. Same code, opposite outcome based on shell state.
+
+#### Current Pain
+The validation ladder (`npm test` → green locally → push) gives false confidence whenever a module has top-level side effects that depend on env vars. The harness currently treats `npm test` as authoritative; it isn't. CI catches it, but only after a push round-trip.
+
+#### Suggested Improvement
+Two complementary changes:
+
+1. **`HARNESS.md` § Validation Ladder**: add a clause:
+   > Before pushing any change that touches config, env-var parsing, or any module with top-level side effects, run the test suite with the relevant env vars UNSET locally: `env -i PATH=$PATH HOME=$HOME npm test` (or `unset VAR && npm test`). If a module can throw at import time, the test runner must prove it survives both states.
+
+2. **`vitest.config.ts`**: add a `setupFiles` entry that clears `OD_*` and `BYOK_*` before each test file loads, so vitest behaves like CI by default. Per-test cases that need env can `vi.stubEnv` explicitly.
+
+   ```ts
+   // tests/setup-clean-env.ts
+   for (const k of Object.keys(process.env)) {
+     if (k.startsWith('OD_') || k.startsWith('BYOK_')) delete process.env[k];
+   }
+   ```
+
+#### Risk
+tiny (test-infra only, no production code change). Catch is high-value: would have caught PR-A's CI break before push.
+
+#### Status
+proposed
