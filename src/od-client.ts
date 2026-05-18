@@ -21,6 +21,7 @@ import type {
   SaveArtifactRequest,
   SaveArtifactResponse,
 } from '../vendor/od-contracts/src/api/artifacts.js';
+import type { AuthDescriptor } from './config.js';
 
 // Not vendored — define locally. Aligns with design §B5 + §B7.
 export type ProviderId = 'openai' | 'anthropic' | 'azure' | 'google' | 'ollama';
@@ -72,9 +73,8 @@ export class OdClient {
 
   constructor(
     baseUrl: string,
-    private readonly token: string = '',
+    private readonly auth: AuthDescriptor = { mode: 'none' },
   ) {
-    // Trim trailing slash so `${baseUrl}/api/...` is well-formed.
     this.baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   }
 
@@ -160,8 +160,19 @@ export class OdClient {
       'content-type': 'application/json',
       ...extra,
     };
-    if (this.token) {
-      h.authorization = `Bearer ${this.token}`;
+    switch (this.auth.mode) {
+      case 'none':
+        break;
+      case 'bearer':
+        h.authorization = `Bearer ${this.auth.token}`;
+        break;
+      case 'basic':
+        h.authorization = `Basic ${Buffer.from(`${this.auth.user}:${this.auth.pass}`).toString('base64')}`;
+        break;
+      default: {
+        const _exhaustive: never = this.auth;
+        throw new Error(`Unknown auth mode: ${JSON.stringify(_exhaustive)}`);
+      }
     }
     return h;
   }

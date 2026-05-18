@@ -64,8 +64,8 @@ describe('OdClient', () => {
       expect(init?.signal).toBe(signal);
     });
 
-    it('does not include Authorization header when token is empty', async () => {
-      const client = new OdClient('http://localhost:7456', '');
+    it('does not include Authorization header when auth mode is none', async () => {
+      const client = new OdClient('http://localhost:7456', { mode: 'none' });
       mockOk({});
 
       const signal = AbortSignal.timeout(5000);
@@ -77,8 +77,8 @@ describe('OdClient', () => {
       expect(Object.hasOwn(headers, 'authorization')).toBe(false);
     });
 
-    it('includes Authorization header when token is set', async () => {
-      const client = new OdClient('http://localhost:7456', 'tk_abc123');
+    it('includes Authorization header when auth mode is bearer', async () => {
+      const client = new OdClient('http://localhost:7456', { mode: 'bearer', token: 'tk_abc123' });
       mockOk({});
 
       const signal = AbortSignal.timeout(5000);
@@ -332,7 +332,7 @@ describe('OdClient', () => {
 
   describe('baseUrl trailing slash handling', () => {
     it('strips trailing slash from baseUrl', async () => {
-      const client = new OdClient('http://localhost:7456/', '');
+      const client = new OdClient('http://localhost:7456/');
       captureCalls();
 
       const signal = AbortSignal.timeout(5000);
@@ -344,7 +344,7 @@ describe('OdClient', () => {
     });
 
     it('preserves baseUrl without trailing slash', async () => {
-      const client = new OdClient('http://localhost:7456', '');
+      const client = new OdClient('http://localhost:7456');
       captureCalls();
 
       const signal = AbortSignal.timeout(5000);
@@ -438,6 +438,43 @@ describe('OdClient', () => {
       const [, init] = fetchMock.mock.calls[0];
       const bodyParsed = JSON.parse(init?.body as string);
       expect(bodyParsed).toEqual(req);
+    });
+  });
+
+  describe('auth mode header shapes', () => {
+    it('emits no authorization header for mode=none', async () => {
+      const client = new OdClient('http://localhost:7456', { mode: 'none' });
+      mockOk({});
+      await client.listProjects(AbortSignal.timeout(5000));
+      const headers = fetchMock.mock.calls[0][1]?.headers as Record<string, string>;
+      expect(Object.hasOwn(headers, 'authorization')).toBe(false);
+    });
+
+    it('emits Bearer header for mode=bearer (regression)', async () => {
+      const client = new OdClient('http://localhost:7456', { mode: 'bearer', token: 'tok123' });
+      mockOk({});
+      await client.listProjects(AbortSignal.timeout(5000));
+      const headers = fetchMock.mock.calls[0][1]?.headers as Record<string, string>;
+      expect(headers.authorization).toBe('Bearer tok123');
+    });
+
+    it('emits Basic header for mode=basic with correct base64', async () => {
+      const client = new OdClient('http://localhost:7456', { mode: 'basic', user: 'alice', pass: 'secret' });
+      mockOk({});
+      await client.listProjects(AbortSignal.timeout(5000));
+      const headers = fetchMock.mock.calls[0][1]?.headers as Record<string, string>;
+      const expected = `Basic ${Buffer.from('alice:secret').toString('base64')}`;
+      expect(headers.authorization).toBe(expected);
+    });
+
+    it('does not leak sentinel password in OdHttpError', async () => {
+      const sentinel = 'SENTINEL_PASSWORD_DO_NOT_LEAK_42';
+      const client = new OdClient('http://localhost:7456', { mode: 'basic', user: 'alice', pass: sentinel });
+      mockErr(500, 'Internal Server Error', 'something went wrong');
+      const err = await client.listProjects(AbortSignal.timeout(5000)).catch((e: unknown) => e) as OdHttpError;
+      expect(err).toBeInstanceOf(OdHttpError);
+      expect(err.message).not.toContain(sentinel);
+      expect(err.bodySnippet ?? '').not.toContain(sentinel);
     });
   });
 });
