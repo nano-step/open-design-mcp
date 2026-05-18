@@ -1,10 +1,13 @@
 /**
  * od-client: HTTP wrapper for the Open Design daemon.
  *
- * Wraps the 6 endpoints byok-pipeline-tool needs:
+ * Wraps the 9 endpoints the MCP server needs:
  *   - GET    /api/projects                          → listProjects
  *   - GET    /api/projects/:id                      → getProject
  *   - GET    /api/projects/:id/files                → listFiles
+ *   - POST   /api/projects                          → createProject
+ *   - PATCH  /api/projects/:id                      → updateProject
+ *   - DELETE /api/projects/:id                      → deleteProject
  *   - POST   /api/proxy/<provider>/stream           → proxyStream
  *   - POST   /api/artifacts/save                    → saveArtifact
  *   - POST   /api/artifacts/lint                    → lintArtifact
@@ -15,6 +18,9 @@
 import type {
   ProjectsResponse,
   ProjectDetailResponse,
+  CreateProjectRequest,
+  CreateProjectResponse,
+  UpdateProjectRequest,
 } from '../vendor/od-contracts/src/api/projects.js';
 import type { ProjectFilesResponse } from '../vendor/od-contracts/src/api/files.js';
 import type {
@@ -107,6 +113,35 @@ export class OdClient {
   ): Promise<ProjectFilesResponse> {
     return this.getJson<ProjectFilesResponse>(
       `/api/projects/${encodeURIComponent(id)}/files`,
+      signal,
+    );
+  }
+
+  async createProject(
+    req: CreateProjectRequest & { id?: string },
+    signal: AbortSignal,
+  ): Promise<CreateProjectResponse> {
+    return this.postJson<CreateProjectResponse>('/api/projects', req, signal);
+  }
+
+  async updateProject(
+    id: string,
+    patch: UpdateProjectRequest,
+    signal: AbortSignal,
+  ): Promise<ProjectDetailResponse> {
+    return this.patchJson<ProjectDetailResponse>(
+      `/api/projects/${encodeURIComponent(id)}`,
+      patch,
+      signal,
+    );
+  }
+
+  async deleteProject(
+    id: string,
+    signal: AbortSignal,
+  ): Promise<{ ok: boolean }> {
+    return this.deleteJson<{ ok: boolean }>(
+      `/api/projects/${encodeURIComponent(id)}`,
       signal,
     );
   }
@@ -213,6 +248,50 @@ export class OdClient {
       method: 'POST',
       headers: this.headers(),
       body: JSON.stringify(body),
+      signal,
+    });
+    if (!res.ok) {
+      const snippet = await this.readSnippet(res);
+      throw new OdHttpError(
+        `${path}: ${res.status} ${res.statusText}`,
+        res.status,
+        res.statusText,
+        snippet,
+      );
+    }
+    return (await res.json()) as T;
+  }
+
+  private async patchJson<T>(
+    path: string,
+    body: unknown,
+    signal: AbortSignal,
+  ): Promise<T> {
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method: 'PATCH',
+      headers: this.headers(),
+      body: JSON.stringify(body),
+      signal,
+    });
+    if (!res.ok) {
+      const snippet = await this.readSnippet(res);
+      throw new OdHttpError(
+        `${path}: ${res.status} ${res.statusText}`,
+        res.status,
+        res.statusText,
+        snippet,
+      );
+    }
+    return (await res.json()) as T;
+  }
+
+  private async deleteJson<T>(
+    path: string,
+    signal: AbortSignal,
+  ): Promise<T> {
+    const res = await fetch(`${this.baseUrl}${path}`, {
+      method: 'DELETE',
+      headers: this.headers(),
       signal,
     });
     if (!res.ok) {

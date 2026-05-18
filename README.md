@@ -4,7 +4,7 @@ A stdio [Model Context Protocol](https://modelcontextprotocol.io/) server that b
 
 ## Status
 
-**v0.7.0 — 5 MCP tools live.** The server activates the full Open Design feature surface: list/inspect projects, save and lint artifacts, and generate designs via BYOK with the full upstream system-prompt fidelity. See [open OpenSpec changes](openspec/changes/) for in-flight work and [closed changes](openspec/changes/archive/) for historical decisions.
+**v0.7.0 — 8 MCP tools live.** The server activates the full Open Design feature surface: list/inspect projects, save and lint artifacts, and generate designs via BYOK with the full upstream system-prompt fidelity. See [open OpenSpec changes](openspec/changes/) for in-flight work and [closed changes](openspec/changes/archive/) for historical decisions.
 
 ## Tools
 
@@ -12,11 +12,14 @@ A stdio [Model Context Protocol](https://modelcontextprotocol.io/) server that b
 |---|---|---|---|
 | `od_list_projects` | read | `OD_DAEMON_URL` | List all projects from the OD daemon. Returns `{projects: [{id, name, kind?, status?}, …]}`. |
 | `od_get_project` | read | `OD_DAEMON_URL` | Fetch a project + its artifact files. Merges `GET /api/projects/:id` and `GET /api/projects/:id/files`. |
+| `od_create_project` | write | `OD_DAEMON_URL` | Create a new project. Returns the project details and an auto-seeded conversation ID. |
+| `od_update_project` | write | `OD_DAEMON_URL` | Update a project's name, custom instructions, or metadata. At least one mutable field is required. |
+| `od_delete_project` | write | `OD_DAEMON_URL` | PERMANENTLY delete a project (database row + on-disk directory). Cannot be undone. |
 | `od_save_artifact` | write | `OD_DAEMON_URL` | Persist an HTML artifact under a URL-safe slug. Returns the saved path + URL. |
 | `od_lint_artifact` | validate | `OD_DAEMON_URL` | Validate an HTML artifact structurally. Returns findings + agent message. |
 | `od_generate_design` | generate (streaming) | `OD_DAEMON_URL` + `BYOK_BASE_URL` + `BYOK_API_KEY` + `BYOK_MODEL` (`BYOK_PROVIDER` optional, defaults to `openai`) | Generate a design via the BYOK pipeline. Composes the upstream Open Design system prompt and proxies through the OD daemon's `/api/proxy/<provider>/stream`. Returns the accumulated text. |
 
-Only `od_generate_design` requires the BYOK vars. The other 4 tools work with just `OD_DAEMON_URL`.
+Only `od_generate_design` requires the BYOK vars. The other 7 tools work with just `OD_DAEMON_URL`.
 
 ## Installation
 
@@ -114,7 +117,7 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
-npm run test:integration   # spawns dist/src/server.js, mocks the OD daemon, exercises all 5 tools
+npm run test:integration   # spawns dist/src/server.js, mocks the OD daemon, exercises all 8 tools
 ```
 
 The engineering harness ([`docs/HARNESS.md`](docs/HARNESS.md)) requires every feature, fix, or refactor to go through an OpenSpec proposal → deep-design → specs → implement → validate → review → PR → archive cycle. See [`docs/stories/`](docs/stories/) for in-flight stories.
