@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { OdClient, OdHttpError } from '../../od-client.js';
 import {
   makeGenerateDesignHandler,
+  mergeProjectInstructions,
   generateDesignInputSchema,
   type GenerateDesignArgs,
 } from '../../tools/generate-design.js';
@@ -392,5 +393,147 @@ describe('makeGenerateDesignHandler', () => {
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('OD daemon unreachable');
     expect(result.content[0].text).not.toContain('Output is incomplete');
+  });
+
+  it('22. projectId + stored customInstructions → composeSystemPrompt receives stored value (issue #37)', async () => {
+    const proxyStreamMock = vi.fn().mockResolvedValue(
+      sseResponse(['event: end\ndata: {}\n\n']),
+    );
+    const getProjectMock = vi.fn().mockResolvedValue({
+      project: {
+        id: 'proj-abc',
+        name: 'Acme',
+        customInstructions: 'brand: indigo #4F46E5, type: Inter',
+      },
+      resolvedDir: '/tmp/proj-abc',
+    });
+    const client = makeStubClient({
+      proxyStream: proxyStreamMock,
+      getProject: getProjectMock,
+    });
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
+    await handler(
+      { prompt: 'pricing page', kind: 'prototype', projectId: 'proj-abc' },
+      {},
+    );
+    expect(getProjectMock).toHaveBeenCalledOnce();
+    expect(getProjectMock.mock.calls[0][0]).toBe('proj-abc');
+    const proxyReq = proxyStreamMock.mock.calls[0][0];
+    expect(proxyReq.systemPrompt).toContain('brand: indigo #4F46E5, type: Inter');
+  });
+
+  it('23. projectId + per-call projectInstructions → merged with separator (issue #37)', async () => {
+    const proxyStreamMock = vi.fn().mockResolvedValue(
+      sseResponse(['event: end\ndata: {}\n\n']),
+    );
+    const getProjectMock = vi.fn().mockResolvedValue({
+      project: { id: 'p', name: 'P', customInstructions: 'STORED brand rules' },
+      resolvedDir: '/tmp/p',
+    });
+    const client = makeStubClient({
+      proxyStream: proxyStreamMock,
+      getProject: getProjectMock,
+    });
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
+    await handler(
+      {
+        prompt: 'pricing page',
+        kind: 'prototype',
+        projectId: 'p',
+        projectInstructions: 'PERCALL refinement',
+      },
+      {},
+    );
+    const proxyReq = proxyStreamMock.mock.calls[0][0];
+    expect(proxyReq.systemPrompt).toContain('STORED brand rules');
+    expect(proxyReq.systemPrompt).toContain('PERCALL refinement');
+    expect(proxyReq.systemPrompt).toMatch(/STORED brand rules[\s\S]*---[\s\S]*PERCALL refinement/);
+  });
+
+  it('24. projectId + project has NO customInstructions → falls back to per-call (issue #37)', async () => {
+    const proxyStreamMock = vi.fn().mockResolvedValue(
+      sseResponse(['event: end\ndata: {}\n\n']),
+    );
+    const getProjectMock = vi.fn().mockResolvedValue({
+      project: { id: 'p', name: 'P' },
+      resolvedDir: '/tmp/p',
+    });
+    const client = makeStubClient({
+      proxyStream: proxyStreamMock,
+      getProject: getProjectMock,
+    });
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
+    await handler(
+      {
+        prompt: 'x',
+        kind: 'prototype',
+        projectId: 'p',
+        projectInstructions: 'ONLY PERCALL',
+      },
+      {},
+    );
+    expect(getProjectMock).toHaveBeenCalledOnce();
+    const proxyReq = proxyStreamMock.mock.calls[0][0];
+    expect(proxyReq.systemPrompt).toContain('ONLY PERCALL');
+    // Merge helper returned the per-call value unchanged (no stored + separator + percall pattern)
+    expect(proxyReq.systemPrompt).not.toMatch(/STORED[\s\S]*\n\n---\n\nONLY PERCALL/);
+  });
+
+  it('25. projectId points at missing project → mapErrorToToolResult 404 path (issue #37)', async () => {
+    const getProjectMock = vi.fn().mockRejectedValue(
+      new OdHttpError(404, 'Not Found', 'Project not found'),
+    );
+    const proxyStreamMock = vi.fn();
+    const client = makeStubClient({
+      proxyStream: proxyStreamMock,
+      getProject: getProjectMock,
+    });
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
+    const result = await handler(
+      { prompt: 'x', kind: 'prototype', projectId: 'proj-nonexistent' },
+      {},
+    );
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text.toLowerCase()).toContain('not found');
+    expect(proxyStreamMock).not.toHaveBeenCalled();
+  });
+
+  it('26. no projectId → getProject is NEVER called (backwards compat, issue #37)', async () => {
+    const proxyStreamMock = vi.fn().mockResolvedValue(
+      sseResponse(['event: end\ndata: {}\n\n']),
+    );
+    const getProjectMock = vi.fn();
+    const client = makeStubClient({
+      proxyStream: proxyStreamMock,
+      getProject: getProjectMock,
+    });
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
+    await handler(DEFAULT_ARGS, {});
+    expect(getProjectMock).not.toHaveBeenCalled();
+    expect(proxyStreamMock).toHaveBeenCalledOnce();
+  });
+});
+
+describe('mergeProjectInstructions (issue #37)', () => {
+  it('27. both undefined → undefined', () => {
+    expect(mergeProjectInstructions(undefined, undefined)).toBeUndefined();
+  });
+
+  it('28. only stored → stored', () => {
+    expect(mergeProjectInstructions('brand rules', undefined)).toBe('brand rules');
+  });
+
+  it('29. only per-call → per-call', () => {
+    expect(mergeProjectInstructions(undefined, 'override')).toBe('override');
+  });
+
+  it('30. both → stored + separator + per-call', () => {
+    expect(mergeProjectInstructions('STORED', 'PERCALL')).toBe(
+      'STORED\n\n---\n\nPERCALL',
+    );
+  });
+
+  it('31. empty string stored → treated as missing', () => {
+    expect(mergeProjectInstructions('', 'percall')).toBe('percall');
   });
 });

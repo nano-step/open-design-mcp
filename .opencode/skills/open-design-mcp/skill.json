@@ -1,6 +1,6 @@
 {
   "name": "open-design-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "OpenCode skill teaching AI agents how to use the 8 MCP tools exposed by open-design-mcp (list/get/create/update/delete projects, save/lint artifacts, BYOK streaming design generation). Covers env setup, auth modes, the PRD-to-HTML workflow, anti-patterns, and error diagnosis.",
   "compatibility": "OpenCode (or any MCP client) with open-design-mcp installed and an Open Design daemon reachable at OD_DAEMON_URL",
   "tags": [
