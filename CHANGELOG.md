@@ -25,6 +25,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.12.1] — 2026-05-18
+
+### Other
+- chore(openspec): archive add-opendesign-mcp-skill
+
+**Install:** `npm install open-design-mcp@0.12.1`
+
+---
+
 ## [0.12.0] — 2026-05-18
 
 ### Added
