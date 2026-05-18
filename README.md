@@ -4,7 +4,19 @@ A stdio [Model Context Protocol](https://modelcontextprotocol.io/) server that b
 
 ## Status
 
-**v0.1.0 — scaffold only.** The server boots, completes the MCP `initialize` handshake, and advertises an empty `tools/list`. Actual tools (list projects, generate design, save artifact, lint, etc.) land in follow-up changes. See [open OpenSpec changes](openspec/changes/) and the [GitHub issues](https://github.com/nano-step/open-design-mcp/issues) for the roadmap.
+**v0.7.0 — 5 MCP tools live.** The server activates the full Open Design feature surface: list/inspect projects, save and lint artifacts, and generate designs via BYOK with the full upstream system-prompt fidelity. See [open OpenSpec changes](openspec/changes/) for in-flight work and [closed changes](openspec/changes/archive/) for historical decisions.
+
+## Tools
+
+| Tool | Verb | Env vars required | Description |
+|---|---|---|---|
+| `od_list_projects` | read | `OD_DAEMON_URL` | List all projects from the OD daemon. Returns `{projects: [{id, name, kind?, status?}, …]}`. |
+| `od_get_project` | read | `OD_DAEMON_URL` | Fetch a project + its artifact files. Merges `GET /api/projects/:id` and `GET /api/projects/:id/files`. |
+| `od_save_artifact` | write | `OD_DAEMON_URL` | Persist an HTML artifact under a URL-safe slug. Returns the saved path + URL. |
+| `od_lint_artifact` | validate | `OD_DAEMON_URL` | Validate an HTML artifact structurally. Returns findings + agent message. |
+| `od_generate_design` | generate (streaming) | `OD_DAEMON_URL` + `BYOK_BASE_URL` + `BYOK_API_KEY` + `BYOK_MODEL` (`BYOK_PROVIDER` optional, defaults to `openai`) | Generate a design via the BYOK pipeline. Composes the upstream Open Design system prompt and proxies through the OD daemon's `/api/proxy/<provider>/stream`. Returns the accumulated text. |
+
+Only `od_generate_design` requires the BYOK vars. The other 4 tools work with just `OD_DAEMON_URL`.
 
 ## Installation
 
@@ -19,17 +31,19 @@ Add the following entry to your MCP client config (OpenCode / Claude Code / Curs
       "env": {
         // Pick the line that matches your deployment (see "Choosing OD_DAEMON_URL" below)
         "OD_DAEMON_URL": "http://ai-open-design:7456",
-        "OD_API_TOKEN": "<your-bearer-token>",
+        "OD_API_TOKEN": "",                            // optional; bearer token if your daemon requires it
+        // BYOK vars — only needed if you call od_generate_design
         "BYOK_BASE_URL": "https://your-ai-proxy.example.com/v1",
         "BYOK_API_KEY": "<provider-api-key>",
-        "BYOK_MODEL": "open-design"
+        "BYOK_MODEL": "open-design",
+        "BYOK_PROVIDER": "openai"                      // optional; one of openai/anthropic/azure/google/ollama
       }
     }
   }
 }
 ```
 
-> The env vars above are documented now so you can wire them once. **In v0.1.0 the server reads none of them** — they are consumed when the BYOK pipeline change ships.
+The server boots successfully with **only `OD_DAEMON_URL` set** — the BYOK vars are validated lazily when `od_generate_design` is invoked. This lets users explore via `od_list_projects` / `od_get_project` before wiring an AI provider.
 
 ## Choosing `OD_DAEMON_URL`
 
@@ -54,13 +68,16 @@ Whichever one returns `200` is your correct `OD_DAEMON_URL`.
 
 ## Environment Variables
 
-| Variable | Purpose | Required (in v0.1.0) |
-|---|---|---|
-| `OD_DAEMON_URL` | Open Design daemon base URL — **see [Choosing `OD_DAEMON_URL`](#choosing-od_daemon_url) above** | No (future BYOK pipeline) |
-| `OD_API_TOKEN` | Bearer token the OD daemon enforces when bound to non-loopback | No (future) |
-| `BYOK_BASE_URL` | OpenAI-compatible AI provider base URL | No (future) |
-| `BYOK_API_KEY` | Provider API key forwarded via OD's `/api/proxy/*/stream` | No (future) |
-| `BYOK_MODEL` | Model id (e.g. `open-design`, `claude-sonnet-4-6`) | No (future) |
+| Variable | Purpose | Required by | Default |
+|---|---|---|---|
+| `OD_DAEMON_URL` | Open Design daemon base URL — **see [Choosing `OD_DAEMON_URL`](#choosing-od_daemon_url) above** | **all tools** (validated eagerly at startup) | — |
+| `OD_API_TOKEN` | Bearer token the OD daemon enforces when bound to non-loopback | optional | `""` (no auth header sent) |
+| `BYOK_BASE_URL` | OpenAI-compatible AI provider base URL | `od_generate_design` only (validated lazily) | — |
+| `BYOK_API_KEY` | Provider API key forwarded via OD's `/api/proxy/*/stream` | `od_generate_design` only | — |
+| `BYOK_MODEL` | Model id (e.g. `open-design`, `claude-sonnet-4-6`) | `od_generate_design` only | — |
+| `BYOK_PROVIDER` | One of `openai` / `anthropic` / `azure` / `google` / `ollama` | optional | `openai` |
+
+The server fails fast with a clear stderr message if `OD_DAEMON_URL` is missing or invalid. BYOK vars are checked only when `od_generate_design` is called — a missing var yields a friendly tool-level error (`isError: true`, text `"BYOK not configured: missing ..."`), never a crash.
 
 ## Development
 
@@ -71,7 +88,7 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
-npm run test:integration   # spawns dist/src/server.js and exercises initialize + tools/list
+npm run test:integration   # spawns dist/src/server.js, mocks the OD daemon, exercises all 5 tools
 ```
 
 The engineering harness ([`docs/HARNESS.md`](docs/HARNESS.md)) requires every feature, fix, or refactor to go through an OpenSpec proposal → deep-design → specs → implement → validate → review → PR → archive cycle. See [`docs/stories/`](docs/stories/) for in-flight stories.

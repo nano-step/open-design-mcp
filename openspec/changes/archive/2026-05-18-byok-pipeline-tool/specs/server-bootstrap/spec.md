@@ -1,24 +1,8 @@
-# server-bootstrap Specification
+# Spec Delta: server-bootstrap (byok-pipeline-tool)
 
-## Purpose
-TBD - created by archiving change init-package-scaffold. Update Purpose after archive.
-## Requirements
-### Requirement: Executable stdio MCP server
+Adds 5 MCP tools to the server. Previously `tools/list` returned `[]`; now returns 5 tool definitions. Server bootstrap (`src/server.ts`) now loads core config + instantiates the OD client + registers all tools via `registerAllTools(server, client)`.
 
-The package SHALL produce a runnable binary at `dist/src/server.js` that boots a Model Context Protocol server over stdio.
-
-#### Scenario: Built binary is executable via node
-
-- **WHEN** the user runs `npm run build` in a clean checkout
-- **THEN** the file `dist/src/server.js` SHALL exist
-- **AND** it SHALL have its execute bit set (mode includes `0o100` for user execute)
-- **AND** its first line SHALL be `#!/usr/bin/env node`
-
-#### Scenario: Binary registered in package.json bin field
-
-- **WHEN** an MCP client config references `"command": "npx", "args": ["-y", "open-design-mcp"]`
-- **THEN** npx SHALL resolve to `dist/src/server.js` via the `bin.open-design-mcp` entry in `package.json`
-- **AND** the binary SHALL boot without printing anything to stdout before the MCP handshake
+## MODIFIED Requirements
 
 ### Requirement: MCP initialize handshake
 
@@ -56,93 +40,7 @@ The MCP SDK (`@modelcontextprotocol/sdk` ^1.29.0) reports `LATEST_PROTOCOL_VERSI
 - **THEN** the server SHALL respond with a JSON-RPC error of code `-32601` (Method not found) for the given id
 - **AND** the server MUST NOT crash or close the transport
 
-### Requirement: Logging discipline
-
-The server MUST never write to stdout except for MCP protocol traffic.
-
-#### Scenario: Startup messages go to stderr
-
-- **WHEN** the server boots
-- **THEN** any startup message such as `"[open-design-mcp] ready"` SHALL be written to `process.stderr`
-- **AND** stdout SHALL contain only valid JSON-RPC frames
-
-#### Scenario: No console.log in our authored source
-
-- **WHEN** the test suite runs `git grep -n "console.log" src/`
-- **THEN** the check SHALL produce zero matches (`console.error` is required instead)
-- **AND** this restriction SHALL apply ONLY to `src/` and NOT to `scripts/` (bash) or `vendor/` (vendored upstream code) or `tests/`
-
-### Requirement: Clean shutdown on signals
-
-The server SHALL handle SIGINT and SIGTERM by closing its transport and exiting with code 0.
-
-#### Scenario: SIGINT triggers graceful exit
-
-- **WHEN** the server process receives SIGINT
-- **THEN** it SHALL call `transport.close()` before exit
-- **AND** it SHALL exit with code 0 within 2 seconds
-- **AND** it MUST NOT leave child processes or open file handles
-
-#### Scenario: SIGTERM triggers graceful exit
-
-- **WHEN** the server process receives SIGTERM
-- **THEN** the behavior SHALL be identical to SIGINT
-
-### Requirement: Engines and runtime
-
-The package SHALL declare a Node.js minimum version of 20 and SHALL refuse to install on older runtimes.
-
-#### Scenario: package.json engines
-
-- **WHEN** `package.json` is read
-- **THEN** the `engines.node` field SHALL be `">=20"`
-- **AND** `npm install` on Node 18 SHALL emit an `EBADENGINE` warning or refuse install
-
-#### Scenario: ESM module type
-
-- **WHEN** `package.json` is read
-- **THEN** the `type` field SHALL be `"module"`
-- **AND** all source `.ts` files in `src/` SHALL import dependencies with explicit `.js` extensions (Node16 module resolution)
-
-### Requirement: Unadvertised capability method returns JSON-RPC error -32601
-
-When a client invokes a method whose capability the server did NOT advertise during `initialize` (e.g. `resources/list` when the server advertised only `tools`), the server SHALL respond with JSON-RPC error code `-32601` (Method not found).
-
-#### Scenario: Integration test exercises resources/list path
-
-- **WHEN** the integration test suite (`tests/integration/initialize-handshake.test.ts`) runs
-- **THEN** it SHALL include a test case named `"rejects resources/list with -32601 (capability not advertised)"`
-- **AND** the test SHALL spawn the built server binary (`dist/src/server.js`) via `StdioClientTransport`
-- **AND** the test SHALL complete the MCP `initialize` handshake
-- **AND** the test SHALL invoke `client.listResources()`
-- **AND** the call SHALL reject with an error whose `code === -32601` (exact integer)
-- **AND** the test SHALL close the client cleanly
-
-### Requirement: SIGINT triggers graceful shutdown
-
-When the server process receives `SIGINT`, it SHALL exit with code 0 within 2000 milliseconds. No zombie process or hung stdio.
-
-#### Scenario: Integration test exercises SIGINT path
-
-- **WHEN** the integration test suite runs
-- **THEN** it SHALL include a test case named `"shuts down gracefully on SIGINT within 2 seconds"`
-- **AND** the test SHALL spawn the built server binary directly via `child_process.spawn` (NOT via `StdioClientTransport`, to retain raw signal control)
-- **AND** the test SHALL wait for the server's stderr line containing `[open-design-mcp] ready` before sending the signal
-- **AND** the test SHALL send `SIGINT` to the process
-- **AND** the child process SHALL emit `exit` event with `code === 0` (exact integer)
-- **AND** the elapsed wall-clock time between sending SIGINT and the `exit` event SHALL be less than 2000 milliseconds
-- **AND** after exit, `process.kill(child.pid, 0)` SHALL throw an error with `code === 'ESRCH'` (process truly gone)
-- **AND** the vitest per-test timeout SHALL be 5000 milliseconds (framework safety net, NOT the behavioral assertion)
-
-### Requirement: Integration test suite size
-
-After `vendor-sync-initial` is applied, the integration test suite SHALL contain at least 5 test cases (3 pre-existing + 2 new HB-3 cases).
-
-#### Scenario: Test count verifies suite growth
-
-- **WHEN** `npm run test:integration` runs
-- **THEN** the test runner output SHALL report ≥ 5 passing tests under `tests/integration/initialize-handshake.test.ts`
-- **AND** zero failing or skipped tests
+## ADDED Requirements
 
 ### Requirement: Server boots even without BYOK env vars
 
@@ -274,4 +172,3 @@ The server SHALL register a tool `od_lint_artifact` wrapping `POST /api/artifact
 - **WHEN** the OD daemon returns `{findings: [], agentMessage: undefined}`
 - **THEN** the response SHALL have `content[0].text === "Lint: 0 findings."`
 - **AND** `isError` SHALL NOT be set
-
