@@ -380,6 +380,140 @@ describe('OdClient', () => {
     });
   });
 
+  describe('createProject', () => {
+    it('happy path returns CreateProjectResponse', async () => {
+      const client = new OdClient('http://localhost:7456');
+      const body = {
+        project: { id: 'new-proj', name: 'New' },
+        conversationId: 'conv-1',
+      };
+      mockOk(body);
+
+      const signal = AbortSignal.timeout(5000);
+      const result = await client.createProject(
+        { name: 'New' },
+        signal,
+      );
+
+      expect(result).toEqual(body);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe('http://localhost:7456/api/projects');
+      expect(init?.method).toBe('POST');
+    });
+
+    it('throws OdHttpError on 400 BAD_REQUEST', async () => {
+      const client = new OdClient('http://localhost:7456');
+      mockErr(400, 'Bad Request', 'invalid project id');
+
+      const signal = AbortSignal.timeout(5000);
+      const err = await client
+        .createProject({ name: '' }, signal)
+        .catch((e) => e);
+
+      expect(err).toBeInstanceOf(OdHttpError);
+      expect(err.status).toBe(400);
+      expect(err.bodySnippet).toContain('invalid project id');
+    });
+  });
+
+  describe('updateProject', () => {
+    it('happy path returns ProjectDetailResponse', async () => {
+      const client = new OdClient('http://localhost:7456');
+      const body = {
+        project: { id: 'p1', name: 'Updated' },
+        resolvedDir: '/tmp/od/p1',
+      };
+      mockOk(body);
+
+      const signal = AbortSignal.timeout(5000);
+      const result = await client.updateProject(
+        'p1',
+        { name: 'Updated' },
+        signal,
+      );
+
+      expect(result).toEqual(body);
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe('http://localhost:7456/api/projects/p1');
+      expect(init?.method).toBe('PATCH');
+    });
+
+    it('throws OdHttpError on 404', async () => {
+      const client = new OdClient('http://localhost:7456');
+      mockErr(404, 'Not Found');
+
+      const signal = AbortSignal.timeout(5000);
+      const err = await client
+        .updateProject('missing', { name: 'X' }, signal)
+        .catch((e) => e);
+
+      expect(err).toBeInstanceOf(OdHttpError);
+      expect(err.status).toBe(404);
+    });
+
+    it('throws OdHttpError on 400', async () => {
+      const client = new OdClient('http://localhost:7456');
+      mockErr(400, 'Bad Request', 'name too long');
+
+      const signal = AbortSignal.timeout(5000);
+      const err = await client
+        .updateProject('p1', { name: 'x'.repeat(9999) }, signal)
+        .catch((e) => e);
+
+      expect(err).toBeInstanceOf(OdHttpError);
+      expect(err.status).toBe(400);
+      expect(err.bodySnippet).toContain('name too long');
+    });
+
+    it('uses PATCH HTTP method', async () => {
+      const client = new OdClient('http://localhost:7456');
+      captureCalls();
+
+      const signal = AbortSignal.timeout(5000);
+      await client.updateProject('p1', { name: 'Y' }, signal);
+
+      expect(lastCall?.init.method).toBe('PATCH');
+    });
+  });
+
+  describe('deleteProject', () => {
+    it('happy path returns {ok: true}', async () => {
+      const client = new OdClient('http://localhost:7456');
+      mockOk({ ok: true });
+
+      const signal = AbortSignal.timeout(5000);
+      const result = await client.deleteProject('p1', signal);
+
+      expect(result).toEqual({ ok: true });
+      const [url, init] = fetchMock.mock.calls[0];
+      expect(url).toBe('http://localhost:7456/api/projects/p1');
+      expect(init?.method).toBe('DELETE');
+    });
+
+    it('throws OdHttpError on 404', async () => {
+      const client = new OdClient('http://localhost:7456');
+      mockErr(404, 'Not Found');
+
+      const signal = AbortSignal.timeout(5000);
+      const err = await client
+        .deleteProject('missing', signal)
+        .catch((e) => e);
+
+      expect(err).toBeInstanceOf(OdHttpError);
+      expect(err.status).toBe(404);
+    });
+
+    it('uses DELETE HTTP method', async () => {
+      const client = new OdClient('http://localhost:7456');
+      captureCalls();
+
+      const signal = AbortSignal.timeout(5000);
+      await client.deleteProject('p1', signal);
+
+      expect(lastCall?.init.method).toBe('DELETE');
+    });
+  });
+
   describe('content-type header', () => {
     it('sets content-type: application/json on all requests', async () => {
       const client = new OdClient('http://localhost:7456');
