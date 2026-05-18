@@ -23,7 +23,7 @@ async function main(): Promise<void> {
   // Eager core config validation. Process exits with friendly stderr on
   // missing/invalid OD_DAEMON_URL. (design §B2)
   const core = loadCoreConfig();
-  const client = new OdClient(core.OD_DAEMON_URL, core.OD_API_TOKEN);
+  const client = new OdClient(core.OD_DAEMON_URL, core.auth);
 
   const server = new McpServer({
     name: SERVER_NAME,
