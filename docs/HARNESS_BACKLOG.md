@@ -294,3 +294,46 @@ tiny (test infrastructure only). Eliminates a class of "passes locally, fails CI
 
 #### Status
 proposed
+
+---
+
+### HB-10: No shared raw JSON-RPC server spawn helper for multi-instance integration tests
+
+#### Discovered While
+PR-E `tools-byok.test.ts` — the "missing BYOK" case requires spawning a second server child with different env vars. The raw JSON-RPC send/receive loop (stdout buffer + response Map + send helper + ready-wait) had to be duplicated verbatim inside the test, adding ~50 lines of boilerplate.
+
+#### Current Pain
+Each integration test file that needs to spawn a server in raw JSON-RPC mode (without the MCP SDK `Client`) re-implements the same stdout buffer splitter, response dispatch map, `send()` helper, and stderr-ready-wait. When a single test needs two server instances (e.g. to test different env configs), the duplication doubles inside a single file.
+
+Combined with HB-9 (transport-env helper for SDK-client tests), there are TWO competing spawn-helper shapes — one for SDK clients, one for raw protocol. A future test-infra change should solve both.
+
+#### Suggested Improvement
+Extract a `spawnRawServer(mockUrl, extraEnv?)` helper into `tests/integration/helpers/spawn-server.ts` that encapsulates spawn, buffer, response map, and `send` helper, returning `{ send, sendNotification, server, close }`. Tests that need the raw protocol import from this helper instead.
+
+#### Risk
+Test infrastructure only — zero production impact. Eliminates the class of silent "boilerplate diverged between files" bugs and makes multi-instance test setup readable in 5 lines instead of 50.
+
+#### Status
+proposed
+
+---
+
+### HB-11: Implementation drifted from design — timeout deviates from §B6 (60s → 120s)
+
+#### Discovered While
+PR-E implementation of `od_generate_design` (2026-05-18). Design.md §B6 specified `60000` ms default timeout. Implementation used `120_000` ms because AI generation legitimately runs longer than 60s for complex prompts. The deviation was made consciously but only documented in the commit body, not the design doc.
+
+#### Current Pain
+The OpenSpec design.md is the **source of truth** for the change. Implementation-time deviations that don't update design.md create a silent divergence: future readers see one number in design, another in code, and don't know which is current. The harness explicitly treats design.md as authoritative pre-Oracle, so this drift undermines the review gate.
+
+#### Suggested Improvement
+Two complementary harness changes:
+1. **HARNESS.md § Spec Drift Policy**: whenever implementation diverges from a Locked Decision in design.md, the implementing PR MUST either (a) update design.md in the same commit OR (b) file an explicit OpenSpec change updating the decision. No PR may merge with silent design-vs-code drift, even on minor numeric tweaks.
+2. **OpenSpec change `byok-pipeline-tool-tuning-v0-4`** (filed post-archive): retroactively patch design.md §B6 to read `REQUEST_TIMEOUT_MS default 120000` so the design matches the shipped code. Alternatively, walk implementation back to 60000 and document a `REQUEST_TIMEOUT_MS` env var override.
+
+#### Risk
+tiny (process / documentation). High-value: each drift incident has compounding cost (next reader is wrong about the system).
+
+#### Status
+proposed
+proposed

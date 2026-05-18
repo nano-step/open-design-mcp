@@ -80,3 +80,16 @@ export function respondJson(
   res.setHeader('content-type', 'application/json');
   res.end(JSON.stringify(body));
 }
+
+export function respondSse(
+  res: ServerResponse,
+  events: Array<{ event: string; data: unknown }>,
+): void {
+  res.statusCode = 200;
+  res.setHeader('content-type', 'text/event-stream');
+  res.setHeader('cache-control', 'no-cache');
+  for (const e of events) {
+    res.write(`event: ${e.event}\ndata: ${JSON.stringify(e.data)}\n\n`);
+  }
+  res.end();
+}

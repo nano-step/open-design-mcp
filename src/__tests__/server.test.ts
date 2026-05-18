@@ -54,9 +54,4 @@ describe('stubs', () => {
     expect(typeof mod.OdClient).toBe('function');
     expect(typeof mod.OdHttpError).toBe('function');
   });
-
-  it('pipeline exports PIPELINE_PLACEHOLDER', async () => {
-    const mod = await import('../pipeline.js');
-    expect(mod.PIPELINE_PLACEHOLDER).toBe('not-yet-implemented');
-  });
 });
