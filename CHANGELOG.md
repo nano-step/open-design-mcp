@@ -21,6 +21,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.11.3] — 2026-05-18
+
+### Documentation
+- docs(evidence): hosted-OD smoke — all 8 tools work with basic auth
+
+**Install:** `npm install open-design-mcp@0.11.3`
+
+---
+
 ## [0.11.2] — 2026-05-18
 
 ### Documentation
