@@ -7,10 +7,9 @@ describe('config.ts', () => {
     it('parses valid core config with URL only', () => {
       const env = { OD_DAEMON_URL: 'http://localhost:7456' };
       const cfg = parseCore(env);
-      expect(cfg).toEqual({
-        OD_DAEMON_URL: 'http://localhost:7456',
-        OD_API_TOKEN: '',
-      });
+      expect(cfg.OD_DAEMON_URL).toBe('http://localhost:7456');
+      expect(cfg.OD_API_TOKEN).toBe('');
+      expect(cfg.auth).toEqual({ mode: 'none' });
     });
 
     it('parses valid core config with URL and token', () => {
@@ -19,10 +18,9 @@ describe('config.ts', () => {
         OD_API_TOKEN: 'secret-token-abc',
       };
       const cfg = parseCore(env);
-      expect(cfg).toEqual({
-        OD_DAEMON_URL: 'http://ai-open-design:7456',
-        OD_API_TOKEN: 'secret-token-abc',
-      });
+      expect(cfg.OD_DAEMON_URL).toBe('http://ai-open-design:7456');
+      expect(cfg.OD_API_TOKEN).toBe('secret-token-abc');
+      expect(cfg.auth).toEqual({ mode: 'bearer', token: 'secret-token-abc' });
     });
 
     it('throws ZodError if OD_DAEMON_URL is missing', () => {
@@ -33,6 +31,93 @@ describe('config.ts', () => {
     it('throws ZodError if OD_DAEMON_URL is not a valid URL', () => {
       const env = { OD_DAEMON_URL: 'not-a-url' };
       expect(() => parseCore(env)).toThrow(z.ZodError);
+    });
+
+    it('infers mode=none when only OD_DAEMON_URL is set', () => {
+      const cfg = parseCore({ OD_DAEMON_URL: 'http://localhost:7456' });
+      expect(cfg.auth).toEqual({ mode: 'none' });
+    });
+
+    it('infers mode=bearer when OD_API_TOKEN is set', () => {
+      const cfg = parseCore({
+        OD_DAEMON_URL: 'http://localhost:7456',
+        OD_API_TOKEN: 'tok123',
+      });
+      expect(cfg.auth).toEqual({ mode: 'bearer', token: 'tok123' });
+    });
+
+    it('infers mode=basic when OD_BASIC_USER and OD_BASIC_PASS are set', () => {
+      const cfg = parseCore({
+        OD_DAEMON_URL: 'http://localhost:7456',
+        OD_BASIC_USER: 'alice',
+        OD_BASIC_PASS: 'secret',
+      });
+      expect(cfg.auth).toEqual({ mode: 'basic', user: 'alice', pass: 'secret' });
+    });
+
+    it('throws on ambiguous defaults when both token and basic creds are set', () => {
+      expect(() =>
+        parseCore({
+          OD_DAEMON_URL: 'http://localhost:7456',
+          OD_API_TOKEN: 'tok',
+          OD_BASIC_USER: 'alice',
+          OD_BASIC_PASS: 'secret',
+        }),
+      ).toThrow(/disambiguate/);
+    });
+
+    it('throws when OD_AUTH_MODE=basic but OD_BASIC_USER is missing', () => {
+      expect(() =>
+        parseCore({
+          OD_DAEMON_URL: 'http://localhost:7456',
+          OD_AUTH_MODE: 'basic',
+          OD_BASIC_PASS: 'secret',
+        }),
+      ).toThrow(/OD_BASIC_USER/);
+    });
+
+    it('throws when OD_AUTH_MODE=basic but OD_BASIC_PASS is missing', () => {
+      expect(() =>
+        parseCore({
+          OD_DAEMON_URL: 'http://localhost:7456',
+          OD_AUTH_MODE: 'basic',
+          OD_BASIC_USER: 'alice',
+        }),
+      ).toThrow(/OD_BASIC_PASS/);
+    });
+
+    it('throws when OD_AUTH_MODE=bearer but OD_API_TOKEN is missing', () => {
+      expect(() =>
+        parseCore({
+          OD_DAEMON_URL: 'http://localhost:7456',
+          OD_AUTH_MODE: 'bearer',
+        }),
+      ).toThrow(/OD_API_TOKEN/);
+    });
+
+    it('rejects OD_DAEMON_URL with embedded credentials', () => {
+      expect(() =>
+        parseCore({
+          OD_DAEMON_URL: 'https://u:p@host.example.com/',
+        }),
+      ).toThrow(/OD_BASIC/);
+    });
+
+    it('rejects OD_DAEMON_URL with embedded username only', () => {
+      expect(() =>
+        parseCore({
+          OD_DAEMON_URL: 'https://alice@host.example.com/',
+        }),
+      ).toThrow(/OD_BASIC/);
+    });
+
+    it('throws ZodError for invalid OD_AUTH_MODE value', () => {
+      expect(() =>
+        parseCore({
+          OD_DAEMON_URL: 'http://localhost:7456',
+          OD_AUTH_MODE: 'oauth',
+        }),
+      ).toThrow(z.ZodError);
     });
   });
 

@@ -178,7 +178,9 @@ File a follow-up OpenSpec change `od-auth-modes` (lane: `normal`, change-type: `
 small. Additive only; existing bearer-token flow unchanged when `OD_AUTH_MODE` defaults. Credential-handling lives in one file (`od-client.ts`). Touches design §B7 (lock-update) and §B14 (logging) but no architectural shift.
 
 #### Status
-proposed
+implemented
+
+Implemented in `od-auth-modes` change ([openspec/changes/od-auth-modes/](../openspec/changes/od-auth-modes/)).
 
 ---
 
