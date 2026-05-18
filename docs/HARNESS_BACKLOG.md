@@ -210,3 +210,45 @@ tiny (test-infra only, no production code change). Catch is high-value: would ha
 
 #### Status
 proposed
+
+---
+
+### HB-8: Multi-PR features collide with auto-publish-on-feat — slicing inflates the version namespace
+
+#### Discovered While
+byok-pipeline-tool PR-A merge (2026-05-18). The plan sliced the change into 6 small single-issue PRs (PR-A..PR-F) per HARNESS.md high-risk-lane policy. PR-A merged with subject `feat(byok-pipeline-tool): add config + SSE parser foundation (PR-A, #7) (#13)`. The shared `publish-stable` workflow correctly interpreted `feat:` → minor bump → v0.4.0 published to npm. But PR-A is **foundation-only**; `tools/list` still returns []. The v0.4.0 advertises a feature surface that doesn't exist.
+
+#### Current Pain
+Two correct policies in tension:
+- **HARNESS.md**: encourage small single-issue PRs for high-risk changes
+- **shared-workflows publish-stable**: bump+publish on every `feat:` commit
+
+Multi-PR features inflate the semver namespace. Final byok-pipeline-tool ship lands at ~v0.7.0 or v0.8.0 instead of the planned v0.4.0. End users see 4-5 npm releases that each ship "partial feature" with no behavior change until the last one.
+
+#### Suggested Improvement
+Add a `release:skip` PR label that the publish-stable workflow checks on the merge commit. If present, skip the version bump and npm publish. Maintainer applies it to all but the final slice of a multi-PR feature.
+
+Implementation outline (in `kokorolx/shared-workflows` repo, not this one):
+```yaml
+- id: should-skip
+  run: |
+    if gh pr view "${{ github.event.head_commit.message }}" --json labels | jq -e '.labels[] | select(.name == "release:skip")'; then
+      echo "skip=true" >> $GITHUB_OUTPUT
+    fi
+- if: steps.should-skip.outputs.skip != 'true'
+  run: ./bump-and-publish.sh
+```
+
+Add a new label `release:skip` to this repo's label set.
+
+Concurrent project-local mitigation (cheap, no workflow change needed): use `chore(byok-pipeline-tool):` prefix for intermediate slices and reserve `feat:` for the slice that flips a visible behaviour. PR-A, PR-B would be `chore:` (no user-visible change); PR-C, PR-D, PR-E, PR-F would be `feat:`. Less elegant but works today.
+
+#### Risk
+tiny (process / workflow improvement). Shared-workflow change is opt-in via label, defaults unchanged.
+
+#### Status
+proposed
+
+#### Decisions taken now
+- v0.4.0 stays published. Re-plan version namespace: PR-F final ship will be whatever publish-stable lands on after PR-B..PR-E merge through (estimated v0.5.0 — PR-B is `chore:` patch, PR-C/D/E each minor-bump).
+- PR-F task updated to drop the literal "release v0.4.0" wording.

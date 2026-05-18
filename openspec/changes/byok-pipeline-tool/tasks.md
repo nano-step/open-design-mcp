@@ -13,7 +13,7 @@ Per HARNESS.md high-risk lane policy, work ships as 6 small single-issue PRs (no
 | PR-C: read-only tools | [#9](https://github.com/nano-step/open-design-mcp/issues/9) | T-5, T-6, T-10 (partial), T-11, T-12, T-13 (partial) | medium |
 | PR-D: write tools | [#10](https://github.com/nano-step/open-design-mcp/issues/10) | T-8, T-9, T-10 (partial), T-13 (partial) | medium |
 | PR-E: BYOK streaming + Oracle gate | [#11](https://github.com/nano-step/open-design-mcp/issues/11) | T-7, T-13 (partial), T-19 | **high** |
-| PR-F: live smoke + README + v0.4.0 + archive | [#12](https://github.com/nano-step/open-design-mcp/issues/12) | T-14, T-15, T-16, T-17 (per-PR), T-18 (per-PR), T-20 | low |
+| PR-F: live smoke + README + final release + archive | [#12](https://github.com/nano-step/open-design-mcp/issues/12) | T-14, T-15, T-16, T-17 (per-PR), T-18 (per-PR), T-20 | low |
 
 T-17 (atomic commits) and T-18 (push + open PR) are per-slice operations folded into each PR rather than batched at the end. Epic [#6](https://github.com/nano-step/open-design-mcp/issues/6) closes when #12 lands.
 
@@ -216,11 +216,13 @@ Fire Oracle with full repo context:
 
 Oracle MUST return PASS. If REVISE, address findings + re-fire with session_id.
 
-## T-20: Merge + archive + verify v0.4.0
+## T-20: Merge + archive + verify final release
+
+> **Note (HB-8, decided 2026-05-18)**: PR-A merge auto-published v0.4.0 because `publish-stable` bumps on every `feat:` subject. The PR slicing originally reserved v0.4.0 for this task. We accepted the inflation and re-planned: the final byok-pipeline-tool release will be whatever `publish-stable` lands on after PR-B..PR-E merge through (estimated v0.5.0 since PR-B is `chore:` patch and PR-C/D/E each `feat:` minor). Verify the actual published version at the end; do not hard-code an expected v-string here.
 
 - Squash-merge PR (continuous-release fires)
-- Wait for Publish Stable run → v0.4.0 on npm
-- `npm view open-design-mcp version` → `0.4.0`
+- Wait for Publish Stable run → final version published on npm
+- `npm view open-design-mcp version` matches the bumped value in `package.json` on master
 - Smoke test from npm against live OD daemon
 - `openspec archive byok-pipeline-tool` + commit
 - Verify issue #6 auto-closes
