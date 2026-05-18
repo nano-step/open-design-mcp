@@ -9,7 +9,11 @@ import { registerSaveArtifact } from './save-artifact.js';
 import { registerLintArtifact } from './lint-artifact.js';
 import { registerGenerateDesign } from './generate-design.js';
 
-export function registerAllTools(server: McpServer, client: OdClient): void {
+export function registerAllTools(
+  server: McpServer,
+  client: OdClient,
+  generateTimeoutMs: number,
+): void {
   registerListProjects(server, client);
   registerGetProject(server, client);
   registerCreateProject(server, client);
@@ -17,5 +21,5 @@ export function registerAllTools(server: McpServer, client: OdClient): void {
   registerDeleteProject(server, client);
   registerSaveArtifact(server, client);
   registerLintArtifact(server, client);
-  registerGenerateDesign(server, client);
+  registerGenerateDesign(server, client, generateTimeoutMs);
 }

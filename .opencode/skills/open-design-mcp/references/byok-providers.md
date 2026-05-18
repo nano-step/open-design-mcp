@@ -88,12 +88,13 @@ export BYOK_PROVIDER="ollama"
 
 `od_generate_design` is the only streaming tool. Key timing facts:
 
-- **Typical end-to-end:** 10–60 seconds depending on model speed and design complexity
-- **Default timeout:** 120,000 ms (2 minutes) — `DEFAULT_TIMEOUT_MS` in `src/tools/generate-design.ts`
-- **Progress notifications:** emitted every 25 SSE events (~tokens) — `PROGRESS_EVERY` constant
-- **Abort signal:** if the MCP client cancels, the underlying fetch is aborted and the daemon's stream tear-down propagates upstream
+- **Typical end-to-end:** ~10 seconds for small sections (single hero, paragraph rewrite); 1–5 minutes for full pages; up to 10 minutes for complex multi-section designs (`kind: "deck"`, `kind: "site"`).
+- **Default server timeout:** 600,000 ms (10 min) — configurable via `OD_GENERATE_TIMEOUT_MS`. Raised from 120s after issue [#33](https://github.com/nano-step/open-design-mcp/issues/33) confirmed full-page generations legitimately exceed it.
+- **Partial-result recovery:** on server-side timeout or client cancel mid-stream, accumulated tokens are returned as partial HTML with a trailing `<!-- Generation timed out... -->` (or `cancelled by client`) comment marker and `isError: true`. The partial output is real and salvageable — pair with `od_save_artifact` to checkpoint progress before retrying or slicing.
+- **Progress notifications:** emitted every 25 SSE deltas — but only when the client supplied `_meta.progressToken` (per MCP spec; servers may not emit unsolicited progress). `PROGRESS_EVERY` constant.
+- **Client transport timeout (separate concern):** MCP clients have their own JSON-RPC request timeout (often 60s). If the client times out before the server does, the server's partial-recovery path doesn't help — the response never reaches the client. This is a known limitation of OpenCode's MCP integration: it sets `resetTimeoutOnProgress: true` but doesn't pass an `onprogress` callback, so the TypeScript SDK never sends a `progressToken` to the server, so no progress keepalives flow. Workaround: if you control the client, pass `onprogress` to `client.callTool`; otherwise slice prompts small.
 
-For long, complex designs (`kind: "deck"` or `kind: "site"`), tokens-per-minute matters more than tokens-per-request. Pick a fast model.
+For long, complex designs, tokens-per-minute matters more than tokens-per-request. Pick a fast model and consider slicing the prompt into sections.
 
 ## Cost & Security
 

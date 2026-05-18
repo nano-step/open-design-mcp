@@ -32,7 +32,7 @@ describe('server.ts source invariants', () => {
   });
 
   it('wires the tool orchestrator registerAllTools', () => {
-    expect(source).toContain('registerAllTools(server, client)');
+    expect(source).toContain('registerAllTools(server, client,');
   });
 
   it('loads core config via loadCoreConfig()', () => {

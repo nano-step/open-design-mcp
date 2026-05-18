@@ -23,7 +23,11 @@ Only `od_generate_design` requires the BYOK vars. The other 7 tools work with ju
 
 ## How it works
 
-When you invoke `od_generate_design` with a PRD-style prompt, the MCP server composes a ~20–50 KB system prompt locally (vendored `composeSystemPrompt` injects designer charter + `kind`-specific rules), then POSTs to the OD daemon's `/api/proxy/<provider>/stream` endpoint. The daemon is a thin pass-through proxy — it forwards to your BYOK provider, transcodes the upstream stream into its own SSE format, and streams tokens back. The MCP server accumulates deltas and emits `notifications/progress` every 25 tokens. Typical end-to-end: 10–60 seconds. Full reference with file:line citations: [`docs/architecture/generate-design-flow.md`](./docs/architecture/generate-design-flow.md).
+When you invoke `od_generate_design` with a PRD-style prompt, the MCP server composes a ~20–50 KB system prompt locally (vendored `composeSystemPrompt` injects designer charter + `kind`-specific rules), then POSTs to the OD daemon's `/api/proxy/<provider>/stream` endpoint. The daemon is a thin pass-through proxy — it forwards to your BYOK provider, transcodes the upstream stream into its own SSE format, and streams tokens back. The MCP server accumulates deltas and emits `notifications/progress` every 25 tokens (only when the client supplied a `progressToken`, per MCP spec).
+
+**Typical timing:** ~10 seconds for small sections (single hero, paragraph rewrite); 1–5 minutes for full pages; up to 10 minutes for complex multi-section designs. Server timeout defaults to 10 minutes (`OD_GENERATE_TIMEOUT_MS`, configurable). On abort or timeout mid-stream, accumulated tokens are returned as partial HTML with a trailing `<!-- Generation timed out... -->` comment marker and `isError: true` — pair with `od_save_artifact` to checkpoint partial progress.
+
+Full reference with file:line citations: [`docs/architecture/generate-design-flow.md`](./docs/architecture/generate-design-flow.md).
 
 ```mermaid
 sequenceDiagram
@@ -100,6 +104,7 @@ Whichever one returns `200` is your correct `OD_DAEMON_URL`.
 | `OD_AUTH_MODE` | Auth mode: `none`, `bearer`, or `basic`. Auto-derived if unset (token set → `bearer`; basic creds set → `basic`; neither → `none`) | optional | inferred |
 | `OD_BASIC_USER` | HTTP Basic Auth username | `OD_AUTH_MODE=basic` | — |
 | `OD_BASIC_PASS` | HTTP Basic Auth password | `OD_AUTH_MODE=basic` | — |
+| `OD_GENERATE_TIMEOUT_MS` | Server-side timeout for `od_generate_design`, in milliseconds. Raised from the previous 120s after [#33](https://github.com/nano-step/open-design-mcp/issues/33) confirmed full-page generations legitimately exceed it. | optional | `600000` (10 min) |
 | `BYOK_BASE_URL` | OpenAI-compatible AI provider base URL | `od_generate_design` only (validated lazily) | — |
 | `BYOK_API_KEY` | Provider API key forwarded via OD's `/api/proxy/*/stream` | `od_generate_design` only | — |
 | `BYOK_MODEL` | Model id (e.g. `open-design`, `claude-sonnet-4-6`) | `od_generate_design` only | — |

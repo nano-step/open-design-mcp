@@ -6,6 +6,10 @@ export const coreEnvSchema = z.object({
   OD_AUTH_MODE: z.enum(['none', 'bearer', 'basic']).optional(),
   OD_BASIC_USER: z.string().optional(),
   OD_BASIC_PASS: z.string().optional(),
+  // od_generate_design server-side timeout. Default 600_000 (10 min) — large
+  // designs (full pages, decks) legitimately take 5–10 minutes through Sonnet.
+  // See issue #33 for the repro that drove this from the previous 120s cap.
+  OD_GENERATE_TIMEOUT_MS: z.coerce.number().int().positive().default(600_000),
 });
 
 export type AuthDescriptor =

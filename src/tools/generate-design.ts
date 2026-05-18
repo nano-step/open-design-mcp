@@ -34,7 +34,6 @@ export type GenerateDesignArgs = z.infer<typeof inputSchema>;
 
 export { inputSchema as generateDesignInputSchema };
 
-const DEFAULT_TIMEOUT_MS = 120_000; // §B6 — AI generation legitimately long
 const PROGRESS_EVERY = 25; // §B4
 
 type SendNotification = (notification: ServerNotification) => Promise<void>;
@@ -45,8 +44,20 @@ interface HandlerExtra {
   _meta?: { progressToken?: string | number };
 }
 
+function isAbortError(err: unknown): err is DOMException {
+  return (
+    err instanceof DOMException &&
+    (err.name === 'AbortError' || err.name === 'TimeoutError')
+  );
+}
+
+function isTimeoutError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === 'TimeoutError';
+}
+
 export function makeGenerateDesignHandler(
   client: OdClient,
+  timeoutMs: number,
   loadByok: () => ByokConfig = getByokConfig,
 ): (args: GenerateDesignArgs, extra?: HandlerExtra) => Promise<{
   content: Array<{ type: 'text'; text: string }>;
@@ -102,7 +113,7 @@ export function makeGenerateDesignHandler(
     };
 
     // Step 4: compose AbortSignal — timeout + caller's signal (§B6).
-    const signals: AbortSignal[] = [AbortSignal.timeout(DEFAULT_TIMEOUT_MS)];
+    const signals: AbortSignal[] = [AbortSignal.timeout(timeoutMs)];
     if (extra?.signal) signals.push(extra.signal);
     const combined = AbortSignal.any(signals);
 
@@ -162,7 +173,27 @@ export function makeGenerateDesignHandler(
         // start events are advisory; nothing to do.
       }
     } catch (err) {
-      // AbortError, parse error, network error
+      if (isAbortError(err) && accumulated.length > 0) {
+        const timedOut = isTimeoutError(err);
+        const reason = timedOut
+          ? `timed out after ${timeoutMs}ms`
+          : 'cancelled by client';
+        const advice = timedOut
+          ? ' Increase OD_GENERATE_TIMEOUT_MS or slice the prompt into smaller sections.'
+          : '';
+        return {
+          content: [
+            {
+              type: 'text',
+              text:
+                accumulated +
+                `\n\n<!-- Generation ${reason} at ${deltaCount} deltas ` +
+                `(${accumulated.length} chars). Output is incomplete.${advice} -->`,
+            },
+          ],
+          isError: true,
+        };
+      }
       return mapErrorToToolResult(err, client.authMode);
     }
 
@@ -175,14 +206,15 @@ export function makeGenerateDesignHandler(
 export function registerGenerateDesign(
   server: McpServer,
   client: OdClient,
+  timeoutMs: number,
 ): void {
-  const handler = makeGenerateDesignHandler(client);
+  const handler = makeGenerateDesignHandler(client, timeoutMs);
   server.registerTool(
     'od_generate_design',
     {
       title: 'Generate a design via BYOK pipeline',
       description:
-        "Generate a design artifact using BYOK. Composes the upstream Open Design system prompt and proxies through OD's /api/proxy/<provider>/stream endpoint. Requires BYOK_BASE_URL, BYOK_API_KEY, BYOK_MODEL env vars in addition to OD_DAEMON_URL.",
+        "Generate a design artifact using BYOK. Composes the upstream Open Design system prompt and proxies through OD's /api/proxy/<provider>/stream endpoint. Requires BYOK_BASE_URL, BYOK_API_KEY, BYOK_MODEL env vars in addition to OD_DAEMON_URL. Long prompts (full pages) can take 5-10 minutes — server timeout defaults to 10 min, configurable via OD_GENERATE_TIMEOUT_MS. On abort or timeout mid-stream, accumulated tokens are returned as partial HTML with a trailing comment marker and isError=true.",
       inputSchema: inputSchema.shape,
       // No outputSchema — generated text is freeform (design §B10).
     },

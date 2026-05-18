@@ -34,7 +34,7 @@ async function main(): Promise<void> {
   // McpServer auto-advertises the tools capability once any tool is
   // registered, so we no longer need the explicit registerCapabilities()
   // call from the v0.1 scaffold.
-  registerAllTools(server, client);
+  registerAllTools(server, client, core.OD_GENERATE_TIMEOUT_MS);
 
   const transport = new StdioServerTransport();
 
