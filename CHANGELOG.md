@@ -13,6 +13,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.10.0] — 2026-05-18
+
+### Added
+- feat(od-auth-modes): support HTTP Basic Auth for hosted OD daemons (closes #23) (#24)
+
+**Install:** `npm install open-design-mcp@0.10.0`
+
+---
+
 ## [0.9.0] — 2026-05-18
 
 ### Added
