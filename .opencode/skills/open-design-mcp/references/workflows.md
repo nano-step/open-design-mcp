@@ -126,6 +126,71 @@ Step 5: Save with the SAME slug to overwrite, or a new slug for versioning:
 - For checkpoints worth keeping: use versioned slugs (`pricing-v1`, `pricing-v2`).
 - For A/B variants: descriptive slugs (`pricing-dark`, `pricing-light`).
 
+## Workflow D — Multi-Page Consistency via Stored customInstructions
+
+**User intent:** "Make me a full SaaS site — pricing, about, FAQ — they all need to look like one product."
+
+**Env required:** `OD_DAEMON_URL` + BYOK (same as Workflow B).
+
+The trick to consistency: set design preferences ONCE on the project via `customInstructions`, then pass `projectId` to every `od_generate_design` call. The MCP fetches the project record and merges the stored brand rules into the system prompt automatically — no need to repeat them on every call.
+
+```
+Step 1: Create the project with full brand rules:
+  od_create_project({
+    name: "Acme SaaS",
+    kind: "site",
+    fidelity: "mid",
+    customInstructions: "Brand: deep indigo #4F46E5 + warm cream #FAF7F2. Inter for body, Fraunces for headlines. Rounded-2xl everything. Voice: confident, slightly playful. Dark mode optional but design light-first."
+  })
+  → { project: { id: "proj-abc", ... } }
+
+Step 2: Generate each page — pass projectId, NOT the full brand spec:
+  od_generate_design({
+    projectId: "proj-abc",                       # ← key: auto-fetches stored brand
+    prompt: "Pricing page with 3 tiers (Free / Pro $29/mo / Enterprise)",
+    kind: "prototype"
+  })
+  → HTML with the brand applied — you didn't have to paste it
+
+  od_generate_design({
+    projectId: "proj-abc",
+    prompt: "About page with team grid and timeline",
+    kind: "prototype"
+  })
+  → same brand language across pages
+
+  od_generate_design({
+    projectId: "proj-abc",
+    prompt: "FAQ page, 12 questions across 3 categories",
+    kind: "prototype"
+  })
+  → consistent typography, palette, and voice
+
+Step 3: Lint + save each one (Workflow B steps 3-4 unchanged).
+```
+
+**Per-call override:**
+
+If one page needs to deviate (holiday landing, feature launch, etc.), pass `projectInstructions` on that single call — it's appended after the stored rules with a `---` separator, so the LLM treats it as a fresher refinement of the brand:
+
+```
+od_generate_design({
+  projectId: "proj-abc",
+  prompt: "Black Friday landing page",
+  projectInstructions: "Seasonal override: add deep red #DC2626 as secondary accent for CTAs and badges. Keep everything else from the brand."
+})
+```
+
+**When `projectId` is omitted** (backwards compatible):
+- Behavior is identical to Workflow B — no extra HTTP call, no auto-fetch
+- You can still pass `projectInstructions` explicitly if you want per-call instructions without project context
+
+**Common pitfalls:**
+
+- Don't paste the full brand spec into BOTH `customInstructions` AND `projectInstructions` — you'll get duplication in the system prompt and the LLM may over-emphasize the repeated parts.
+- A 404 from `od_generate_design` with a `projectId` argument means the project doesn't exist — use `od_list_projects` to confirm the id.
+- Updating `customInstructions` mid-project: subsequent `od_generate_design` calls will see the new rules; previously-generated artifacts are unaffected.
+
 ## Cross-Cutting Tips
 
 - **One project, many artifacts.** A project is a logical grouping (e.g., "Pricing Page"); artifacts are slugged HTML files inside it (e.g., `pricing-v1`, `pricing-faq`).

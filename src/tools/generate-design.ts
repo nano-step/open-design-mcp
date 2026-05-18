@@ -21,6 +21,13 @@ const KIND_VALUES = [
 
 const inputSchema = z.object({
   prompt: z.string().min(1).describe('Design request from the user'),
+  projectId: z
+    .string()
+    .min(1)
+    .optional()
+    .describe(
+      "When provided, the project's stored customInstructions are merged into the system prompt. Per-call projectInstructions wins on conflict.",
+    ),
   kind: z
     .enum(KIND_VALUES)
     .optional()
@@ -53,6 +60,16 @@ function isAbortError(err: unknown): err is DOMException {
 
 function isTimeoutError(err: unknown): boolean {
   return err instanceof DOMException && err.name === 'TimeoutError';
+}
+
+export function mergeProjectInstructions(
+  stored: string | undefined,
+  perCall: string | undefined,
+): string | undefined {
+  if (!stored && !perCall) return undefined;
+  if (!stored) return perCall;
+  if (!perCall) return stored;
+  return `${stored}\n\n---\n\n${perCall}`;
 }
 
 export function makeGenerateDesignHandler(
@@ -88,13 +105,35 @@ export function makeGenerateDesignHandler(
       return mapErrorToToolResult(err, client.authMode);
     }
 
+    // Step 1.5: if projectId provided, fetch the project to harvest stored
+    // customInstructions. Errors surface via the same mapErrorToToolResult
+    // path as od_get_project (#37).
+    let storedCustomInstructions: string | undefined;
+    if (args.projectId) {
+      const earlySignals: AbortSignal[] = [AbortSignal.timeout(timeoutMs)];
+      if (extra?.signal) earlySignals.push(extra.signal);
+      const earlyCombined = AbortSignal.any(earlySignals);
+
+      try {
+        const detail = await client.getProject(args.projectId, earlyCombined);
+        storedCustomInstructions = detail.project.customInstructions || undefined;
+      } catch (err) {
+        return mapErrorToToolResult(err, client.authMode);
+      }
+    }
+
+    const mergedProjectInstructions = mergeProjectInstructions(
+      storedCustomInstructions,
+      args.projectInstructions,
+    );
+
     // Step 2: compose system prompt with FULL upstream fidelity (§B5).
     let systemPrompt: string;
     try {
       systemPrompt = composeSystemPrompt({
         metadata: { kind: args.kind },
         userInstructions: args.userInstructions,
-        projectInstructions: args.projectInstructions,
+        projectInstructions: mergedProjectInstructions,
         streamFormat: 'plain',
       });
     } catch (err) {
@@ -214,7 +253,7 @@ export function registerGenerateDesign(
     {
       title: 'Generate a design via BYOK pipeline',
       description:
-        "Generate a design artifact using BYOK. Composes the upstream Open Design system prompt and proxies through OD's /api/proxy/<provider>/stream endpoint. Requires BYOK_BASE_URL, BYOK_API_KEY, BYOK_MODEL env vars in addition to OD_DAEMON_URL. Long prompts (full pages) can take 5-10 minutes — server timeout defaults to 10 min, configurable via OD_GENERATE_TIMEOUT_MS. On abort or timeout mid-stream, accumulated tokens are returned as partial HTML with a trailing comment marker and isError=true.",
+        "Generate a design artifact using BYOK. Composes the upstream Open Design system prompt and proxies through OD's /api/proxy/<provider>/stream endpoint. Requires BYOK_BASE_URL, BYOK_API_KEY, BYOK_MODEL env vars in addition to OD_DAEMON_URL. When projectId is provided, the project's stored customInstructions are merged into the system prompt (set brand rules once via od_create_project or od_update_project; per-call projectInstructions wins on conflict). Long prompts (full pages) can take 5-10 minutes — server timeout defaults to 10 min, configurable via OD_GENERATE_TIMEOUT_MS. On abort or timeout mid-stream, accumulated tokens are returned as partial HTML with a trailing comment marker and isError=true.",
       inputSchema: inputSchema.shape,
       // No outputSchema — generated text is freeform (design §B10).
     },
