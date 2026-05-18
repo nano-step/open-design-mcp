@@ -28,6 +28,19 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.13.0] — 2026-05-18
+
+### Added
+- feat: add od-workflow skill — OD playbook for OpenCode subagents (closes #38) (#41)
+
+### Other
+- chore(openspec): archive wire-project-custominstructions
+
+**Install:** `npm install open-design-mcp@0.13.0`
+
+---
+
 ## [0.12.3] — 2026-05-18
 
 ### Other
