@@ -18,6 +18,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.11.0] — 2026-05-18
+
+### Added
+- feat(project-lifecycle-tools): add od_create/update/delete_project (closes #28) (#29)
+
+**Install:** `npm install open-design-mcp@0.11.0`
+
+---
+
 ## [0.10.4] — 2026-05-18
 
 ### Other
