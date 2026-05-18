@@ -31,6 +31,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.14.1] — 2026-05-18
+
+### Other
+- chore(openspec): archive add-od-compose-brief
+
+**Install:** `npm install open-design-mcp@0.14.1`
+
+---
+
 ## [0.14.0] — 2026-05-18
 
 ### Added
