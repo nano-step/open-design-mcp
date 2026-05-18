@@ -10,6 +10,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.7.0] — 2026-05-18
+
+### Added
+- feat(byok-pipeline-tool): activate write/validation MCP tools (PR-D, #10) (#20)
+
+**Install:** `npm install open-design-mcp@0.7.0`
+
+---
+
 ## [0.6.0] — 2026-05-18
 
 ### Added
