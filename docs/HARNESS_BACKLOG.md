@@ -338,4 +338,28 @@ tiny (process / documentation). High-value: each drift incident has compounding 
 
 #### Status
 proposed
+
+---
+
+### HB-12: 401 error mapper hard-codes OD_API_TOKEN hint
+
+#### Discovered While
+Live smoke test of `od-auth-modes` (#24) against `https://od.thnkandgrow.com/` post-merge (2026-05-18). With `OD_AUTH_MODE=basic` and deliberately wrong credentials, the tool returned `"OD auth failed — check OD_API_TOKEN"` — pointing the user at the wrong env var.
+
+#### Current Pain
+A user on `basic` mode sees a 401 message telling them to check `OD_API_TOKEN`, which they don't have set. They will waste time chasing the wrong variable. The auth machinery itself works correctly; only the user-facing hint string is misleading.
+
+#### Suggested Improvement
+File a follow-up OpenSpec change (lane: `tiny`, change-type: `bug-fix`) tracked as [#25](https://github.com/nano-step/open-design-mcp/issues/25). Thread the resolved `AuthDescriptor` (or just `mode`) through to `mapErrorToToolResult` so the 401 branch can return a mode-aware message:
+
+| Mode | 401 message |
+|---|---|
+| `bearer` | `OD auth failed — check OD_API_TOKEN` |
+| `basic` | `OD auth failed — check OD_BASIC_USER and OD_BASIC_PASS` |
+| `none` | `OD daemon returned 401 — set OD_AUTH_MODE and credentials` |
+
+#### Risk
+tiny. Single-file change in `src/tools/errors.ts` plus a small refactor to pass the mode in. No behavior shift — only message string changes.
+
+#### Status
 proposed
