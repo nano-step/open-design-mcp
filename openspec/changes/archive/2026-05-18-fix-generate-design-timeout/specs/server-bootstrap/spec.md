@@ -45,8 +45,6 @@ When `od_generate_design`'s upstream stream is aborted (by server-side timeout o
 - **THEN** the tool SHALL NOT return any partial content
 - **AND** the tool SHALL return the result of `mapErrorToToolResult(err, client.authMode)` (the existing error-mapping path)
 
-## MODIFIED Requirements
-
 ### Requirement: Progress notifications respect MCP spec
 
 The server SHALL emit `notifications/progress` only when the client has provided a `progressToken` in the original `tools/call` request's `_meta.progressToken` field, per the MCP specification's normative requirement that progress notifications MUST only reference tokens provided in an active request.
