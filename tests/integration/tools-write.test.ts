@@ -14,10 +14,10 @@ interface JsonRpcResponse {
   jsonrpc: '2.0';
   id: number;
   result?: unknown;
-  error?: unknown;
+  error?: { code: number; message: string; data?: unknown };
 }
 
-describe('read-only tools (PR-C) — integration', () => {
+describe('write tools (PR-D) — integration', () => {
   let mock: MockOdServer;
   let server: ChildProcessWithoutNullStreams;
   let nextId = 1;
@@ -75,7 +75,7 @@ describe('read-only tools (PR-C) — integration', () => {
       params: {
         protocolVersion: '2025-03-26',
         capabilities: {},
-        clientInfo: { name: 'integration-test', version: '0' },
+        clientInfo: { name: 'integration-test-write', version: '0' },
       },
     });
     expect(initResp.result).toBeDefined();
@@ -120,90 +120,155 @@ describe('read-only tools (PR-C) — integration', () => {
     ]);
   });
 
-  it('od_list_projects happy path returns mapped projects', async () => {
-    mock.handle('GET', '/api/projects', (_req, res) => {
+  it('od_save_artifact happy path — returns path and URL', async () => {
+    mock.handle('POST', '/api/artifacts/save', (req, res, body) => {
+      const parsed = JSON.parse(body) as { identifier: string; title: string; html: string };
+      expect(parsed.identifier).toBe('my-slug');
+      expect(parsed.title).toBeDefined();
+      expect(parsed.html).toBeDefined();
       respondJson(res, 200, {
-        projects: [
-          { id: 'p1', name: 'Hello', kind: 'prototype', statusInfo: { displayStatus: 'succeeded' } },
-          { id: 'p2', name: 'World', kind: 'deck' },
-        ],
+        url: `http://127.0.0.1/artifacts/${parsed.identifier}/index.html`,
+        path: `/od/artifacts/${parsed.identifier}/index.html`,
       });
     });
+
     const resp = await send({
       method: 'tools/call',
-      params: { name: 'od_list_projects', arguments: {} },
+      params: {
+        name: 'od_save_artifact',
+        arguments: {
+          identifier: 'my-slug',
+          title: 'My Artifact',
+          html: '<html><body>Hello</body></html>',
+        },
+      },
     });
+
     const result = resp.result as {
       content: Array<{ type: string; text: string }>;
-      structuredContent: { projects: Array<{ id: string }> };
       isError?: boolean;
     };
     expect(result.isError).not.toBe(true);
-    expect(result.structuredContent.projects).toHaveLength(2);
-    expect(result.content[0].text).toContain('p1');
-    expect(result.content[0].text).toContain('Hello');
+    expect(result.content[0].text).toContain('my-slug');
+    expect(result.content[0].text).toContain('/od/artifacts/my-slug/index.html');
   });
 
-  it('od_list_projects 500 returns isError with friendly text', async () => {
-    mock.handle('GET', '/api/projects', (_req, res) => {
+  it('od_save_artifact with invalid identifier — SDK rejects at validation boundary', async () => {
+    const resp = await send({
+      method: 'tools/call',
+      params: {
+        name: 'od_save_artifact',
+        arguments: {
+          identifier: 'BAD ID',
+          title: 'My Artifact',
+          html: '<html/>',
+        },
+      },
+    });
+
+    const isJsonRpcError = resp.error != null;
+    const isToolError =
+      resp.result != null &&
+      (resp.result as { isError?: boolean }).isError === true;
+
+    expect(isJsonRpcError || isToolError).toBe(true);
+  });
+
+  it('od_save_artifact 422 — isError true, text contains "422"', async () => {
+    mock.handle('POST', '/api/artifacts/save', (_req, res) => {
+      res.statusCode = 422;
+      res.statusMessage = 'Unprocessable Entity';
+      res.end('duplicate identifier');
+    });
+
+    const resp = await send({
+      method: 'tools/call',
+      params: {
+        name: 'od_save_artifact',
+        arguments: {
+          identifier: 'dup-slug',
+          title: 'Dup',
+          html: '<html/>',
+        },
+      },
+    });
+
+    const result = resp.result as { isError?: boolean; content: Array<{ text: string }> };
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('422');
+  });
+
+  it('od_lint_artifact happy path with findings — returns formatted text', async () => {
+    mock.handle('POST', '/api/artifacts/lint', (_req, res) => {
+      respondJson(res, 200, {
+        findings: [
+          { severity: 'warning', message: 'missing alt', path: 'a.html', line: 5 },
+          { severity: 'error', message: 'bad nesting' },
+        ],
+        agentMessage: 'fix it',
+      });
+    });
+
+    const resp = await send({
+      method: 'tools/call',
+      params: {
+        name: 'od_lint_artifact',
+        arguments: { html: '<html><img></html>' },
+      },
+    });
+
+    const result = resp.result as {
+      content: Array<{ type: string; text: string }>;
+      isError?: boolean;
+    };
+    expect(result.isError).not.toBe(true);
+    const text = result.content[0].text;
+    expect(text).toContain('Lint: 2 finding(s):');
+    expect(text).toContain('a.html:5');
+    expect(text).toContain('missing alt');
+    expect(text).toContain('[error]');
+    expect(text).toContain('bad nesting');
+    expect(text).toContain('Agent: fix it');
+  });
+
+  it('od_lint_artifact with no findings — returns "Lint: 0 findings."', async () => {
+    mock.handle('POST', '/api/artifacts/lint', (_req, res) => {
+      respondJson(res, 200, { findings: [] });
+    });
+
+    const resp = await send({
+      method: 'tools/call',
+      params: {
+        name: 'od_lint_artifact',
+        arguments: { html: '<html><body>Clean</body></html>' },
+      },
+    });
+
+    const result = resp.result as {
+      content: Array<{ type: string; text: string }>;
+      isError?: boolean;
+    };
+    expect(result.isError).not.toBe(true);
+    expect(result.content[0].text).toBe('Lint: 0 findings.');
+  });
+
+  it('od_lint_artifact 500 — isError true, mentions OD daemon error', async () => {
+    mock.handle('POST', '/api/artifacts/lint', (_req, res) => {
       res.statusCode = 500;
       res.statusMessage = 'Internal Server Error';
       res.end('boom');
     });
+
     const resp = await send({
       method: 'tools/call',
-      params: { name: 'od_list_projects', arguments: {} },
+      params: {
+        name: 'od_lint_artifact',
+        arguments: { html: '<html/>' },
+      },
     });
+
     const result = resp.result as { isError?: boolean; content: Array<{ text: string }> };
     expect(result.isError).toBe(true);
     expect(result.content[0].text.toLowerCase()).toContain('od daemon error');
-  });
-
-  it('od_get_project happy path merges project + files', async () => {
-    mock.handle('GET', '/api/projects/p1', (_req, res) => {
-      respondJson(res, 200, {
-        project: { id: 'p1', name: 'Hello', kind: 'prototype' },
-        resolvedDir: '/tmp/od/p1',
-      });
-    });
-    mock.handle('GET', '/api/projects/p1/files', (_req, res) => {
-      respondJson(res, 200, { files: [{ path: 'index.html' }, { path: 'style.css' }] });
-    });
-    const resp = await send({
-      method: 'tools/call',
-      params: { name: 'od_get_project', arguments: { projectId: 'p1' } },
-    });
-    const result = resp.result as {
-      structuredContent: {
-        project: { id: string };
-        files: Array<{ path: string }>;
-      };
-      isError?: boolean;
-    };
-    expect(result.isError).not.toBe(true);
-    expect(result.structuredContent.project.id).toBe('p1');
-    expect(result.structuredContent.files.map((f) => f.path)).toEqual([
-      'index.html',
-      'style.css',
-    ]);
-  });
-
-  it('od_get_project 404 returns friendly "Project not found"', async () => {
-    mock.handle('GET', '/api/projects/missing', (_req, res) => {
-      res.statusCode = 404;
-      res.statusMessage = 'Not Found';
-      res.end('no');
-    });
-    mock.handle('GET', '/api/projects/missing/files', (_req, res) => {
-      res.statusCode = 404;
-      res.end('no');
-    });
-    const resp = await send({
-      method: 'tools/call',
-      params: { name: 'od_get_project', arguments: { projectId: 'missing' } },
-    });
-    const result = resp.result as { isError?: boolean; content: Array<{ text: string }> };
-    expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain('Project not found: missing');
   });
 });
