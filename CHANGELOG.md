@@ -24,6 +24,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.12.0] — 2026-05-18
+
+### Added
+- feat: add open-design-mcp OpenCode skill (closes #32) (#34)
+
+**Install:** `npm install open-design-mcp@0.12.0`
+
+---
+
 ## [0.11.5] — 2026-05-18
 
 ### Other
