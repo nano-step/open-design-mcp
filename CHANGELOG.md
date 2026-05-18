@@ -32,6 +32,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.14.2] — 2026-05-18
+
+### Other
+- chore(od-workflow-skill): bump to v0.1.1 (post-#39 sync)
+
+**Install:** `npm install open-design-mcp@0.14.2`
+
+---
+
 ## [0.14.1] — 2026-05-18
 
 ### Other
