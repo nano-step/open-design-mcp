@@ -115,11 +115,40 @@ Fix: set the env vars listed in the error message (see [byok-providers.md](byok-
 
 ## Generation Timeouts / Aborts
 
-Default timeout: 120,000 ms (2 minutes). If `od_generate_design` aborts:
+Default server timeout: 600,000 ms (10 minutes) — configurable via `OD_GENERATE_TIMEOUT_MS`. Raised from a previous 120s after issue [#33](https://github.com/nano-step/open-design-mcp/issues/33) confirmed full-page generations legitimately exceed that.
 
-- The user canceled the call → expected, no action needed
-- The 2-minute window was exceeded → the model is too slow for the prompt complexity. Switch to a faster model or reduce prompt size. For very large designs (`kind: "deck"`, `kind: "site"`), this is the most common failure.
-- The daemon's stream hung mid-way → check daemon logs for upstream errors; often a BYOK provider issue
+### Symptom 1 — Server-side timeout fired
+
+You see a tool result with `isError: true` and text ending in:
+
+```
+<!-- Generation timed out after Nms at N deltas (M chars). Output is incomplete.
+     Increase OD_GENERATE_TIMEOUT_MS or slice the prompt into smaller sections. -->
+```
+
+**What happened:** the server-side `AbortSignal.timeout` fired mid-stream. The HTML *before* the comment is real and salvageable — the LLM produced those tokens before being cut off.
+
+**Fix:**
+1. Read the partial HTML — is it usable as-is? If yes, save via `od_save_artifact` with a `-partial` slug suffix.
+2. If you need the full design: either raise `OD_GENERATE_TIMEOUT_MS` (default 600000), or slice the prompt into sections (hero, features, FAQ, footer) and generate each separately.
+3. Don't retry the same prompt blindly — you'll hit the same timeout.
+
+### Symptom 2 — Client-side timeout fired (no partial recovery)
+
+You see `MCP error -32001: Request timed out` from the MCP client itself, well before the server timeout would fire. No partial output is delivered.
+
+**What happened:** the MCP client's JSON-RPC transport timeout (often 60s) fired first. The server may still be generating, but its response never reaches you. Server-side `OD_GENERATE_TIMEOUT_MS` doesn't help here — the client gave up first.
+
+**Known interaction** with OpenCode's MCP integration: OpenCode sets `resetTimeoutOnProgress: true` but doesn't pass an `onprogress` callback to `client.callTool`. The underlying TypeScript SDK only sends a `progressToken` to the server when `onprogress` is set, so without it, no progress notifications flow, so the client's timeout never resets. This is a client-side gap, not a server bug — the server is spec-correct in refusing to emit unsolicited progress.
+
+**Fix (client-side):**
+- If you control the MCP client: pass `onprogress` AND `resetTimeoutOnProgress: true` to `client.callTool`.
+- If you're using OpenCode: slice the prompt into chunks small enough to finish within the client's default timeout (~60s ≈ a single hero section).
+- Track at the upstream OpenCode issue (link TBD once filed).
+
+### Symptom 3 — User canceled
+
+Tool result has `isError: true` and trailing `<!-- Generation cancelled by client at N deltas... -->`. Expected behavior; the partial HTML is real.
 
 ## Debugging Checklist
 

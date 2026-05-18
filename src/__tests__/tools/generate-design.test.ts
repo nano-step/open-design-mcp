@@ -59,7 +59,7 @@ describe('makeGenerateDesignHandler', () => {
     const client = makeStubClient({
       proxyStream: vi.fn().mockResolvedValue(sseResponse(blocks)),
     });
-    const handler = makeGenerateDesignHandler(client, stubByok());
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
     const result = await handler(DEFAULT_ARGS);
 
     expect(result.isError).toBeUndefined();
@@ -73,7 +73,7 @@ describe('makeGenerateDesignHandler', () => {
     const client = makeStubClient({
       proxyStream: vi.fn().mockResolvedValue(sseResponse(blocks)),
     });
-    const handler = makeGenerateDesignHandler(client, stubByok());
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
     const result = await handler(DEFAULT_ARGS);
 
     expect(result.isError).toBeUndefined();
@@ -90,7 +90,7 @@ describe('makeGenerateDesignHandler', () => {
     const client = makeStubClient({
       proxyStream: vi.fn().mockResolvedValue(sseResponse(blocks)),
     });
-    const handler = makeGenerateDesignHandler(client, stubByok());
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
     const result = await handler(DEFAULT_ARGS);
 
     expect(result.isError).toBe(true);
@@ -103,7 +103,7 @@ describe('makeGenerateDesignHandler', () => {
         new OdHttpError('proxyStream: 401 Unauthorized', 401, 'Unauthorized'),
       ),
     });
-    const handler = makeGenerateDesignHandler(client, stubByok());
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
     const result = await handler(DEFAULT_ARGS);
 
     expect(result.isError).toBe(true);
@@ -116,7 +116,7 @@ describe('makeGenerateDesignHandler', () => {
         new OdHttpError('proxyStream: 500 Internal Server Error', 500, 'Internal Server Error'),
       ),
     });
-    const handler = makeGenerateDesignHandler(client, stubByok());
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
     const result = await handler(DEFAULT_ARGS);
 
     expect(result.isError).toBe(true);
@@ -127,7 +127,7 @@ describe('makeGenerateDesignHandler', () => {
     const client = makeStubClient({
       proxyStream: vi.fn().mockRejectedValue(new Error('ECONNREFUSED')),
     });
-    const handler = makeGenerateDesignHandler(client, stubByok());
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
     const result = await handler(DEFAULT_ARGS);
 
     expect(result.isError).toBe(true);
@@ -150,7 +150,7 @@ describe('makeGenerateDesignHandler', () => {
         },
       ]);
     };
-    const handler = makeGenerateDesignHandler(client, throwingByok);
+    const handler = makeGenerateDesignHandler(client, 600_000, throwingByok);
     const result = await handler(DEFAULT_ARGS);
 
     expect(result.isError).toBe(true);
@@ -164,7 +164,7 @@ describe('makeGenerateDesignHandler', () => {
     const proxyStreamMock = vi.fn().mockResolvedValue(sseResponse(blocks));
     const client = makeStubClient({ proxyStream: proxyStreamMock });
     const byok = stubByok();
-    const handler = makeGenerateDesignHandler(client, byok);
+    const handler = makeGenerateDesignHandler(client, 600_000, byok);
     await handler({
       prompt: 'Build a landing page',
       kind: 'prototype',
@@ -191,7 +191,7 @@ describe('makeGenerateDesignHandler', () => {
       proxyStream: vi.fn().mockResolvedValue(sseResponse(blocks)),
     });
     const sendNotification = vi.fn().mockResolvedValue(undefined);
-    const handler = makeGenerateDesignHandler(client, stubByok());
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
     await handler(DEFAULT_ARGS, {
       sendNotification,
       _meta: { progressToken: 'tok-42' },
@@ -217,7 +217,7 @@ describe('makeGenerateDesignHandler', () => {
       proxyStream: vi.fn().mockResolvedValue(sseResponse(blocks)),
     });
     const sendNotification = vi.fn().mockResolvedValue(undefined);
-    const handler = makeGenerateDesignHandler(client, stubByok());
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
     await handler(DEFAULT_ARGS, { sendNotification });
 
     expect(sendNotification).not.toHaveBeenCalled();
@@ -229,7 +229,7 @@ describe('makeGenerateDesignHandler', () => {
     );
     const client = makeStubClient({ proxyStream: proxyStreamMock });
     const controller = new AbortController();
-    const handler = makeGenerateDesignHandler(client, stubByok());
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
     await handler(DEFAULT_ARGS, { signal: controller.signal });
 
     expect(proxyStreamMock).toHaveBeenCalledOnce();
@@ -246,7 +246,7 @@ describe('makeGenerateDesignHandler', () => {
     const client = makeStubClient({
       proxyStream: vi.fn().mockResolvedValue(sseResponse(blocks)),
     });
-    const handler = makeGenerateDesignHandler(client, stubByok());
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
     await handler(DEFAULT_ARGS);
 
     const allWrites = stderrSpy.mock.calls.map((call) => String(call[0])).join('');
@@ -287,7 +287,7 @@ describe('makeGenerateDesignHandler', () => {
     });
     try {
       const client = makeStubClient({ proxyStream: vi.fn() });
-      const handler = makeGenerateDesignHandler(client, stubByok());
+      const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
       const result = await handler({ prompt: 'x', kind: 'prototype' }, { signal: new AbortController().signal });
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toContain('synthetic compose failure');
@@ -301,9 +301,96 @@ describe('makeGenerateDesignHandler', () => {
     const client = makeStubClient({
       proxyStream: vi.fn().mockResolvedValue(new Response(null, { status: 200 })),
     });
-    const handler = makeGenerateDesignHandler(client, stubByok());
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
     const result = await handler({ prompt: 'x', kind: 'prototype' }, { signal: new AbortController().signal });
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('empty response body');
+  });
+
+  it('19. partial recovery on TimeoutError mid-stream (issue #33)', async () => {
+    const encoder = new TextEncoder();
+    const chunks = [
+      'event: delta\ndata: {"delta":"<header>"}\n\n',
+      'event: delta\ndata: {"delta":"<nav>"}\n\n',
+      'event: delta\ndata: {"delta":"<hero>"}\n\n',
+    ];
+    let i = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(c) {
+        if (i < chunks.length) {
+          c.enqueue(encoder.encode(chunks[i++]));
+        } else {
+          c.error(new DOMException('signal timed out', 'TimeoutError'));
+        }
+      },
+    });
+    const client = makeStubClient({
+      proxyStream: vi.fn().mockResolvedValue(
+        new Response(stream, {
+          status: 200,
+          headers: { 'content-type': 'text/event-stream' },
+        }),
+      ),
+    });
+    const handler = makeGenerateDesignHandler(client, 300_000, stubByok());
+    const result = await handler(DEFAULT_ARGS, {});
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('<header><nav><hero>');
+    expect(result.content[0].text).toContain('timed out after 300000ms');
+    expect(result.content[0].text).toContain('3 deltas');
+    expect(result.content[0].text).toContain('OD_GENERATE_TIMEOUT_MS');
+  });
+
+  it('20. partial recovery on AbortError client-cancel mid-stream (issue #33)', async () => {
+    const encoder = new TextEncoder();
+    const chunks = [
+      'event: delta\ndata: {"delta":"part1"}\n\n',
+      'event: delta\ndata: {"delta":"part2"}\n\n',
+    ];
+    let i = 0;
+    const stream = new ReadableStream<Uint8Array>({
+      pull(c) {
+        if (i < chunks.length) {
+          c.enqueue(encoder.encode(chunks[i++]));
+        } else {
+          c.error(new DOMException('caller cancelled', 'AbortError'));
+        }
+      },
+    });
+    const client = makeStubClient({
+      proxyStream: vi.fn().mockResolvedValue(
+        new Response(stream, {
+          status: 200,
+          headers: { 'content-type': 'text/event-stream' },
+        }),
+      ),
+    });
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
+    const result = await handler(DEFAULT_ARGS, {});
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('part1part2');
+    expect(result.content[0].text).toContain('cancelled by client');
+    expect(result.content[0].text).not.toContain('timed out after');
+  });
+
+  it('21. TimeoutError with zero deltas falls through to mapErrorToToolResult (issue #33)', async () => {
+    const stream = new ReadableStream<Uint8Array>({
+      pull(c) {
+        c.error(new DOMException('signal timed out', 'TimeoutError'));
+      },
+    });
+    const client = makeStubClient({
+      proxyStream: vi.fn().mockResolvedValue(
+        new Response(stream, {
+          status: 200,
+          headers: { 'content-type': 'text/event-stream' },
+        }),
+      ),
+    });
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
+    const result = await handler(DEFAULT_ARGS, {});
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('OD daemon unreachable');
+    expect(result.content[0].text).not.toContain('Output is incomplete');
   });
 });

@@ -119,6 +119,43 @@ describe('config.ts', () => {
         }),
       ).toThrow(z.ZodError);
     });
+
+    it('defaults OD_GENERATE_TIMEOUT_MS to 600000 when unset (issue #33)', () => {
+      const cfg = parseCore({ OD_DAEMON_URL: 'http://localhost:7456' });
+      expect(cfg.OD_GENERATE_TIMEOUT_MS).toBe(600_000);
+    });
+
+    it('honors explicit OD_GENERATE_TIMEOUT_MS as numeric string', () => {
+      const cfg = parseCore({
+        OD_DAEMON_URL: 'http://localhost:7456',
+        OD_GENERATE_TIMEOUT_MS: '300000',
+      });
+      expect(cfg.OD_GENERATE_TIMEOUT_MS).toBe(300_000);
+    });
+
+    it('rejects non-numeric OD_GENERATE_TIMEOUT_MS', () => {
+      expect(() =>
+        parseCore({
+          OD_DAEMON_URL: 'http://localhost:7456',
+          OD_GENERATE_TIMEOUT_MS: 'abc',
+        }),
+      ).toThrow(z.ZodError);
+    });
+
+    it('rejects zero or negative OD_GENERATE_TIMEOUT_MS', () => {
+      expect(() =>
+        parseCore({
+          OD_DAEMON_URL: 'http://localhost:7456',
+          OD_GENERATE_TIMEOUT_MS: '0',
+        }),
+      ).toThrow(z.ZodError);
+      expect(() =>
+        parseCore({
+          OD_DAEMON_URL: 'http://localhost:7456',
+          OD_GENERATE_TIMEOUT_MS: '-1',
+        }),
+      ).toThrow(z.ZodError);
+    });
   });
 
   describe('parseByok', () => {
