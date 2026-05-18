@@ -17,6 +17,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.10.4] — 2026-05-18
+
+### Other
+- chore(openspec): archive fix-401-mode-aware-hint
+
+**Install:** `npm install open-design-mcp@0.10.4`
+
+---
+
 ## [0.10.3] — 2026-05-18
 
 ### Fixed
