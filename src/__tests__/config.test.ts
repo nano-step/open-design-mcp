@@ -103,6 +103,14 @@ describe('config.ts', () => {
       ).toThrow(/OD_BASIC/);
     });
 
+    it('rejects OD_DAEMON_URL with embedded username only', () => {
+      expect(() =>
+        parseCore({
+          OD_DAEMON_URL: 'https://alice@host.example.com/',
+        }),
+      ).toThrow(/OD_BASIC/);
+    });
+
     it('throws ZodError for invalid OD_AUTH_MODE value', () => {
       expect(() =>
         parseCore({
