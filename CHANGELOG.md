@@ -9,6 +9,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.6.0] — 2026-05-18
+
+### Added
+- feat(byok-pipeline-tool): activate read-only MCP tools (PR-C, #9) (#19)
+
+**Install:** `npm install open-design-mcp@0.6.0`
+
+---
+
 ## [0.5.1] — 2026-05-18
 
 ### Other
