@@ -68,24 +68,27 @@ LLM output:
 1. Bind tech-utility palette + type stack to :root
 2. Plan the 6 sections: nav / hero / pricing-3-tier / comparison-table-8-rows / faq-6-q / footer
 3. od_create_project { name: "Acme Pricing", kind: "prototype", fidelity: "mid", customInstructions: "tech-utility direction: hairline 1px borders, tabular-nums on pricing, signal green only on active tier + primary CTA, system sans, JetBrains Mono for code, no shadows" }
-4. od_generate_design { projectId, prompt: "Build the pricing page: 3-tier hero + 8-feature comparison + 6-FAQ accordion + footer. Real copy for a backend-dev-tools product. No invented stats." }
-5. Lint the HTML
-6. Apply P0 checklist (anti-AI-slop from design-philosophy.md §C)
-7. 5-dim critique — fix anything < 3/5
-8. od_save_artifact { projectId, slug: "pricing-v1", html }
+4. od_compose_brief { pagePrompt: "Build the pricing page: 3-tier hero + 8-feature comparison + 6-FAQ accordion + footer. Real copy for a backend-dev-tools product. No invented stats.", briefAnswers: { audience: "backend developers at Series-A startups, mid-market SaaS buyers", tone: ["Tech / utility", "Modern minimal"] }, brandSpec: "tech-utility direction: hairline 1px borders, tabular-nums on pricing, signal green only on active tier + primary CTA, system sans, JetBrains Mono for code, no shadows" } → pass result to step 5
+5. od_generate_design { projectId, prompt: <result from step 4> }
+6. Lint the HTML
+7. Apply P0 checklist (anti-AI-slop from design-philosophy.md §C)
+8. 5-dim critique — fix anything < 3/5
+9. od_save_artifact { projectId, slug: "pricing-v1", html }
 ```
 
 LLM marks step 1 `in_progress`, executes, marks `completed`. Repeats for each step live.
 
 **Step 3 result:** `{ project: { id: "proj-abc123", name: "Acme Pricing", ... } }`
 
-**Step 4 result:** Full HTML returned. ~12k tokens, 45 seconds.
+**Step 4 result:** Formatted prompt string combining form answers, brand spec, and page brief.
 
-**Step 5:** `od_lint_artifact` flags 1 issue: missing `<meta name="viewport">`. LLM patches.
+**Step 5 result:** Full HTML returned. ~12k tokens, 45 seconds.
 
-**Step 6:** P0 check. Catches "✨ icon next to each feature heading" (anti-slop §C). LLM removes.
+**Step 6:** `od_lint_artifact` flags 1 issue: missing `<meta name="viewport">`. LLM patches.
 
-**Step 7:** Critique scores:
+**Step 7:** P0 check. Catches "✨ icon next to each feature heading" (anti-slop §C). LLM removes.
+
+**Step 8:** Critique scores:
 - Philosophy: 5/5 (tech-utility cleanly applied)
 - Hierarchy: 4/5 (eye lands on Pro tier — correct, that's the recommended)
 - Execution: 4/5 (one row in comparison table had 16px instead of 14px — fix)
@@ -94,7 +97,7 @@ LLM marks step 1 `in_progress`, executes, marks `completed`. Repeats for each st
 
 Two passes. Re-score: all 4+/5. Emit.
 
-**Step 8:** `od_save_artifact { projectId: "proj-abc123", slug: "pricing-v1", html: <final> }` → `{ saved: true, url: "..." }`
+**Step 9:** `od_save_artifact { projectId: "proj-abc123", slug: "pricing-v1", html: <final> }` → `{ saved: true, url: "..." }`
 
 ### Output to user
 
@@ -142,15 +145,18 @@ Bash: grep -E 'font-family' brand.css
 3. Plan 12 slides: 1 title / 1 problem / 1 product / 3 features / 2 traction / 1 GTM / 1 team / 1 ask / 1 thanks (rhythm: title-bold, content-pale, content-pale, content-bold...)
 4. od_create_project { name: "Acme Pitch", kind: "deck", fidelity: "high", customInstructions: <brand-spec contents> }
 5. Copy deck framework template verbatim (NOT writing custom scale-to-fit logic per §G)
-6. od_generate_design { projectId, kind: "deck", prompt: "Generate slides 1-3: title, problem, product. Use the bound brand. Real copy for an enterprise SaaS investor audience." }
-7. od_generate_design { projectId, kind: "deck", prompt: "Generate slides 4-8: 3 features + 2 traction. No invented metrics — labelled stubs for ARR / NPS / churn." }
-8. od_generate_design { projectId, kind: "deck", prompt: "Generate slides 9-12: GTM, team, ask, thanks." }
-9. Lint each generated slide
-10. P0 + 5-dim critique
-11. od_save_artifact { projectId, slug: "pitch-v1", html: <combined> }
+6. od_compose_brief { pagePrompt: "Generate slides 1-3: title, problem, product. Real copy for an enterprise SaaS investor audience.", brandSpec: <brand-spec contents from step 2> } → pass result to step 7
+7. od_generate_design { projectId, kind: "deck", prompt: <result from step 6> }
+8. od_compose_brief { pagePrompt: "Generate slides 4-8: 3 features + 2 traction. No invented metrics — labelled stubs for ARR / NPS / churn.", brandSpec: <brand-spec contents from step 2> } → pass result to step 9
+9. od_generate_design { projectId, kind: "deck", prompt: <result from step 8> }
+10. od_compose_brief { pagePrompt: "Generate slides 9-12: GTM, team, ask, thanks.", brandSpec: <brand-spec contents from step 2> } → pass result to step 11
+11. od_generate_design { projectId, kind: "deck", prompt: <result from step 10> }
+12. Lint each generated slide
+13. P0 + 5-dim critique
+14. od_save_artifact { projectId, slug: "pitch-v1", html: <combined> }
 ```
 
-(Note step 6-8 split: each `od_generate_design` call is ~30s; splitting keeps each call short and lets the LLM run the critique on each segment.)
+(Note step 7-11 split with `od_compose_brief`: each `od_generate_design` call is ~30s; splitting keeps each call short and lets the LLM run the critique on each segment. `od_compose_brief` ensures the brand spec is consistently threaded through each per-slide call without manual formatting.)
 
 LLM executes live. Marks todos `completed` as each step lands.
 
@@ -162,8 +168,8 @@ LLM executes live. Marks todos `completed` as each step lands.
 
 ## Why these examples matter
 
-**Example 1** shows Branch B (no brand) with multi-section single-page generation. The `projectId` from step 3 means step 4's call auto-inherits the direction-as-customInstructions — issue #37's auto-fetch is doing real work.
+**Example 1** shows Branch B (no brand) with multi-section single-page generation. Turn 3 step 4 uses `od_compose_brief` to format the prompt (combining audience, tone, and page brief), ensuring consistent Turn 3 formatting. The `projectId` from step 3 means the call auto-inherits the direction-as-customInstructions — issue #37's auto-fetch is doing real work.
 
-**Example 2** shows Branch A (brand provided) with multi-call generation. The brand spec gets extracted once and stored as `customInstructions`, then every subsequent `od_generate_design` call automatically gets the brand — even though they're separate calls. This is the **multi-page consistency story** working end-to-end.
+**Example 2** shows Branch A (brand provided) with multi-call generation. The brand spec gets extracted once and stored as `customInstructions`. Then, for each per-slide generation (steps 7, 9, 11), `od_compose_brief` formats the prompt with the brand spec baked in — ensuring every slide inherits the brand without manual re-pasting. This is the **multi-page consistency story** working end-to-end.
 
-Both examples demonstrate the 9-step plan template, live TodoWrite updates, the P0 checklist, and the 5-dim critique — exactly the choreography from upstream OD, executed against our MCP.
+Both examples demonstrate the multi-step plan template, `od_compose_brief` formatting Turn 3 prompts, live TodoWrite updates, the P0 checklist, and the 5-dim critique — exactly the choreography from upstream OD, executed against our MCP.
