@@ -33,9 +33,10 @@ describe('server.ts source invariants', () => {
 });
 
 describe('stubs', () => {
-  it('od-client exports OD_CLIENT_PLACEHOLDER', async () => {
+  it('od-client exports OdClient class', async () => {
     const mod = await import('../od-client.js');
-    expect(mod.OD_CLIENT_PLACEHOLDER).toBe('not-yet-implemented');
+    expect(typeof mod.OdClient).toBe('function');
+    expect(typeof mod.OdHttpError).toBe('function');
   });
 
   it('pipeline exports PIPELINE_PLACEHOLDER', async () => {
