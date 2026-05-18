@@ -12,6 +12,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.9.0] — 2026-05-18
+
+### Added
+- feat(byok-pipeline-tool): PR-F — live smoke, README, archive (closes #12) (#22)
+
+**Install:** `npm install open-design-mcp@0.9.0`
+
+---
+
 ## [0.8.0] — 2026-05-18
 
 ### Added
