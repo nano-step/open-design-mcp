@@ -15,6 +15,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.10.2] — 2026-05-18
+
+### Documentation
+- docs(evidence): live smoke transcript for od-auth-modes against hosted OD
+
+**Install:** `npm install open-design-mcp@0.10.2`
+
+---
+
 ## [0.10.1] — 2026-05-18
 
 ### Other
