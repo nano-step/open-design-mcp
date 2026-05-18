@@ -11,6 +11,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.8.0] — 2026-05-18
+
+### Added
+- feat(byok-pipeline-tool): activate od_generate_design BYOK streaming (PR-E, #11) (#21)
+
+**Install:** `npm install open-design-mcp@0.8.0`
+
+---
+
 ## [0.7.0] — 2026-05-18
 
 ### Added
