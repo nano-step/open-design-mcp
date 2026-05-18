@@ -74,7 +74,7 @@ export function makeGenerateDesignHandler(
           isError: true,
         };
       }
-      return mapErrorToToolResult(err);
+      return mapErrorToToolResult(err, client.authMode);
     }
 
     // Step 2: compose system prompt with FULL upstream fidelity (§B5).
@@ -87,7 +87,7 @@ export function makeGenerateDesignHandler(
         streamFormat: 'plain',
       });
     } catch (err) {
-      return mapErrorToToolResult(err);
+      return mapErrorToToolResult(err, client.authMode);
     }
 
     // Step 3: build proxy request.
@@ -115,7 +115,7 @@ export function makeGenerateDesignHandler(
         combined,
       );
     } catch (err) {
-      return mapErrorToToolResult(err);
+      return mapErrorToToolResult(err, client.authMode);
     }
 
     if (!response.body) {
@@ -163,7 +163,7 @@ export function makeGenerateDesignHandler(
       }
     } catch (err) {
       // AbortError, parse error, network error
-      return mapErrorToToolResult(err);
+      return mapErrorToToolResult(err, client.authMode);
     }
 
     return {

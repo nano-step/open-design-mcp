@@ -1,15 +1,31 @@
 import { OdHttpError } from '../od-client.js';
 
+export type AuthMode = 'none' | 'bearer' | 'basic';
+
 export interface ToolErrorResult {
   content: Array<{ type: 'text'; text: string }>;
   isError: true;
 }
 
-export function mapErrorToToolResult(err: unknown): ToolErrorResult {
+function messageFor401(authMode: AuthMode): string {
+  switch (authMode) {
+    case 'basic':
+      return 'OD auth failed — check OD_BASIC_USER and OD_BASIC_PASS';
+    case 'none':
+      return 'OD daemon returned 401 — set OD_AUTH_MODE and credentials';
+    case 'bearer':
+      return 'OD auth failed — check OD_API_TOKEN';
+  }
+}
+
+export function mapErrorToToolResult(
+  err: unknown,
+  authMode: AuthMode = 'bearer',
+): ToolErrorResult {
   if (err instanceof OdHttpError) {
     const text =
       err.status === 401
-        ? 'OD auth failed — check OD_API_TOKEN'
+        ? messageFor401(authMode)
         : err.status === 403
           ? 'OD rejected request (SSRF protection?)'
           : err.status === 404
@@ -35,9 +51,10 @@ export function mapErrorToToolResult(err: unknown): ToolErrorResult {
 export function mapErrorToToolResultWith404(
   err: unknown,
   notFoundText: string,
+  authMode: AuthMode = 'bearer',
 ): ToolErrorResult {
   if (err instanceof OdHttpError && err.status === 404) {
     return { content: [{ type: 'text', text: notFoundText }], isError: true };
   }
-  return mapErrorToToolResult(err);
+  return mapErrorToToolResult(err, authMode);
 }

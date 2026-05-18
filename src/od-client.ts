@@ -78,6 +78,15 @@ export class OdClient {
     this.baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   }
 
+  /**
+   * Resolved auth mode. Exposed so tool handlers can pass it to error
+   * mappers for mode-aware 401 hints. Non-sensitive — credential values
+   * remain encapsulated in the private `auth` field.
+   */
+  get authMode(): 'none' | 'bearer' | 'basic' {
+    return this.auth.mode;
+  }
+
   async listProjects(signal: AbortSignal): Promise<ProjectsResponse> {
     return this.getJson<ProjectsResponse>('/api/projects', signal);
   }

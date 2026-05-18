@@ -54,7 +54,7 @@ export function makeListProjectsHandler(client: OdClient) {
         structuredContent: { projects },
       };
     } catch (err) {
-      return mapErrorToToolResult(err);
+      return mapErrorToToolResult(err, client.authMode);
     }
   };
 }
