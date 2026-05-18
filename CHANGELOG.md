@@ -7,6 +7,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.5.0] — 2026-05-18
+
+### Documentation
+- docs(harness): add HB-8 + adjust byok-pipeline-tool PR-F version expectation (#16) (#17)
+
+**Install:** `npm install open-design-mcp@0.5.0`
+
+---
+
 ## [0.4.1] — 2026-05-18
 
 ### Documentation
