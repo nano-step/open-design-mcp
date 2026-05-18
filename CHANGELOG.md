@@ -27,6 +27,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.12.3] — 2026-05-18
+
+### Other
+- chore(openspec): archive fix-generate-design-timeout
+
+**Install:** `npm install open-design-mcp@0.12.3`
+
+---
+
 ## [0.12.2] — 2026-05-18
 
 ### Fixed
