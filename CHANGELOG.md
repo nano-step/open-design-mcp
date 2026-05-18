@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.4.0] — 2026-05-18
+
+### Added
+- feat(byok-pipeline-tool): add config + SSE parser foundation (PR-A, #7) (#13)
+
+### Other
+- chore(openspec): archive vendor-sync-initial change
+
+**Install:** `npm install open-design-mcp@0.4.0`
+
+---
+
 ## [0.3.0] — 2026-05-17
 
 ### Added
