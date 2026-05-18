@@ -21,6 +21,28 @@ A stdio [Model Context Protocol](https://modelcontextprotocol.io/) server that b
 
 Only `od_generate_design` requires the BYOK vars. The other 7 tools work with just `OD_DAEMON_URL`.
 
+## How it works
+
+When you invoke `od_generate_design` with a PRD-style prompt, the MCP server composes a ~20–50 KB system prompt locally (vendored `composeSystemPrompt` injects designer charter + `kind`-specific rules), then POSTs to the OD daemon's `/api/proxy/<provider>/stream` endpoint. The daemon is a thin pass-through proxy — it forwards to your BYOK provider, transcodes the upstream stream into its own SSE format, and streams tokens back. The MCP server accumulates deltas and emits `notifications/progress` every 25 tokens. Typical end-to-end: 10–60 seconds. Full reference with file:line citations: [`docs/architecture/generate-design-flow.md`](./docs/architecture/generate-design-flow.md).
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant E as Editor
+    participant M as open-design-mcp
+    participant D as OD daemon
+    participant P as BYOK proxy
+    E->>M: tools/call od_generate_design
+    M->>M: composeSystemPrompt + lazy BYOK load
+    M->>D: POST /api/proxy/openai/stream
+    D->>P: POST /chat/completions stream true
+    loop SSE tokens
+        P-->>D: delta
+        D-->>M: event delta
+    end
+    M-->>E: tool result HTML
+```
+
 ## Installation
 
 Add the following entry to your MCP client config (OpenCode / Claude Code / Cursor / Zed):
