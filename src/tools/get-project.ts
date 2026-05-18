@@ -76,7 +76,11 @@ export function makeGetProjectHandler(client: OdClient) {
         structuredContent: { project: projectSummary, files },
       };
     } catch (err) {
-      return mapErrorToToolResultWith404(err, `Project not found: ${projectId}`);
+      return mapErrorToToolResultWith404(
+        err,
+        `Project not found: ${projectId}`,
+        client.authMode,
+      );
     }
   };
 }

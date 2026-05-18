@@ -232,7 +232,7 @@ describe('BYOK tools — integration', () => {
     await mock2.close();
   }, 20_000);
 
-  it('4. OD returns 401 on proxy — tool result isError true, text mentions OD_API_TOKEN', async () => {
+  it('4. OD returns 401 on proxy — tool result isError true, text is mode-aware (none mode)', async () => {
     mock.handle('POST', '/api/proxy/openai/stream', (_req, res) => {
       res.statusCode = 401;
       res.end('bad key');
@@ -244,7 +244,12 @@ describe('BYOK tools — integration', () => {
     });
     const result = resp.result as { isError?: boolean; content: Array<{ text: string }> };
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain('OD_API_TOKEN');
+    // Server runs without any auth env vars set → resolved mode is 'none'.
+    // Per fix-401-mode-aware-hint (closes HB-12 / #25), the mapper now
+    // points the user at OD_AUTH_MODE instead of OD_API_TOKEN.
+    expect(result.content[0].text).toBe(
+      'OD daemon returned 401 — set OD_AUTH_MODE and credentials',
+    );
   });
 
   it('5. SSE error mid-stream — isError true, text contains error message', async () => {

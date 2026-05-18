@@ -346,6 +346,8 @@ proposed
 #### Discovered While
 Live smoke test of `od-auth-modes` (#24) against `https://od.thnkandgrow.com/` post-merge (2026-05-18). With `OD_AUTH_MODE=basic` and deliberately wrong credentials, the tool returned `"OD auth failed — check OD_API_TOKEN"` — pointing the user at the wrong env var.
 
+**Resolved:** Shipped as OpenSpec change `fix-401-mode-aware-hint` / PR #26 (2026-05-18).
+
 #### Current Pain
 A user on `basic` mode sees a 401 message telling them to check `OD_API_TOKEN`, which they don't have set. They will waste time chasing the wrong variable. The auth machinery itself works correctly; only the user-facing hint string is misleading.
 
@@ -362,4 +364,4 @@ File a follow-up OpenSpec change (lane: `tiny`, change-type: `bug-fix`) tracked 
 tiny. Single-file change in `src/tools/errors.ts` plus a small refactor to pass the mode in. No behavior shift — only message string changes.
 
 #### Status
-proposed
+implemented

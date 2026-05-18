@@ -46,7 +46,7 @@ export function makeSaveArtifactHandler(
         ],
       };
     } catch (err) {
-      return mapErrorToToolResult(err);
+      return mapErrorToToolResult(err, client.authMode);
     }
   };
 }

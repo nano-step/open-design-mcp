@@ -4,6 +4,11 @@ import { makeGetProjectHandler } from '../../tools/get-project.js';
 
 function makeStubClient(overrides: Partial<OdClient> = {}): OdClient {
   const client = Object.create(OdClient.prototype) as OdClient;
+  Object.defineProperty(client, 'authMode', {
+    value: 'bearer',
+    writable: true,
+    configurable: true,
+  });
   return Object.assign(client, overrides);
 }
 

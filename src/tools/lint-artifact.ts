@@ -51,7 +51,7 @@ export function makeLintArtifactHandler(
       }
       return { content: [{ type: 'text', text: lines.join('\n') }] };
     } catch (err) {
-      return mapErrorToToolResult(err);
+      return mapErrorToToolResult(err, client.authMode);
     }
   };
 }
