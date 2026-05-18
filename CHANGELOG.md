@@ -28,6 +28,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.12.4] — 2026-05-18
+
+### Fixed
+- fix(generate-design): auto-fetch customInstructions from project (closes #37) (#40)
+
+**Install:** `npm install open-design-mcp@0.12.4`
+
+---
+
 ## [0.12.3] — 2026-05-18
 
 ### Other
