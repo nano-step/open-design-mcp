@@ -20,6 +20,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.11.2] — 2026-05-18
+
+### Documentation
+- docs(evidence): live smoke transcript for project-lifecycle-tools
+
+**Install:** `npm install open-design-mcp@0.11.2`
+
+---
+
 ## [0.11.1] — 2026-05-18
 
 ### Other
