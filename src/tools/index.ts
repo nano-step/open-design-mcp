@@ -4,10 +4,12 @@ import { registerListProjects } from './list-projects.js';
 import { registerGetProject } from './get-project.js';
 import { registerSaveArtifact } from './save-artifact.js';
 import { registerLintArtifact } from './lint-artifact.js';
+import { registerGenerateDesign } from './generate-design.js';
 
 export function registerAllTools(server: McpServer, client: OdClient): void {
   registerListProjects(server, client);
   registerGetProject(server, client);
   registerSaveArtifact(server, client);
   registerLintArtifact(server, client);
+  registerGenerateDesign(server, client);
 }
