@@ -16,6 +16,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.10.3] — 2026-05-18
+
+### Fixed
+- fix(errors): emit mode-aware 401 hint (closes #25) (#27)
+
+**Install:** `npm install open-design-mcp@0.10.3`
+
+---
+
 ## [0.10.2] — 2026-05-18
 
 ### Documentation
