@@ -4,7 +4,7 @@ A stdio [Model Context Protocol](https://modelcontextprotocol.io/) server that b
 
 ## Status
 
-**v0.7.0 — 8 MCP tools live.** The server activates the full Open Design feature surface: list/inspect projects, save and lint artifacts, and generate designs via BYOK with the full upstream system-prompt fidelity. See [open OpenSpec changes](openspec/changes/) for in-flight work and [closed changes](openspec/changes/archive/) for historical decisions.
+**v0.14.0 — 9 MCP tools live.** The server activates the full Open Design feature surface: list/inspect projects, save and lint artifacts, format Turn 3 prompts, and generate designs via BYOK with the full upstream system-prompt fidelity. See [open OpenSpec changes](openspec/changes/) for in-flight work and [closed changes](openspec/changes/archive/) for historical decisions.
 
 ## Tools
 
@@ -17,9 +17,10 @@ A stdio [Model Context Protocol](https://modelcontextprotocol.io/) server that b
 | `od_delete_project` | write | `OD_DAEMON_URL` | PERMANENTLY delete a project (database row + on-disk directory). Cannot be undone. |
 | `od_save_artifact` | write | `OD_DAEMON_URL` | Persist an HTML artifact under a URL-safe slug. Returns the saved path + URL. |
 | `od_lint_artifact` | validate | `OD_DAEMON_URL` | Validate an HTML artifact structurally. Returns findings + agent message. |
+| `od_compose_brief` | format | none | Format a Turn 3 prompt for od_generate_design. Combines form answers, brand spec, and page brief into a string upstream Open Design recognizes. Pure function — no network, no env vars. |
 | `od_generate_design` | generate (streaming) | `OD_DAEMON_URL` + `BYOK_BASE_URL` + `BYOK_API_KEY` + `BYOK_MODEL` (`BYOK_PROVIDER` optional, defaults to `openai`) | Generate a design via the BYOK pipeline. Composes the upstream Open Design system prompt and proxies through the OD daemon's `/api/proxy/<provider>/stream`. Returns the accumulated text. |
 
-Only `od_generate_design` requires the BYOK vars. The other 7 tools work with just `OD_DAEMON_URL`.
+Only `od_generate_design` requires the BYOK vars. The other 8 tools work with just `OD_DAEMON_URL` (or no env vars in the case of `od_compose_brief`).
 
 ## How it works
 

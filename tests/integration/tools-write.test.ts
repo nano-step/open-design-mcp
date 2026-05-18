@@ -109,10 +109,11 @@ describe('write tools (PR-D) — integration', () => {
     server.stdin.write(JSON.stringify({ jsonrpc: '2.0', ...req }) + '\n');
   }
 
-  it('tools/list returns all 8 tools', async () => {
+  it('tools/list returns all 9 tools', async () => {
     const resp = await send({ method: 'tools/list' });
     const result = resp.result as { tools: Array<{ name: string }> };
     expect(result.tools.map((t) => t.name).sort()).toEqual([
+      'od_compose_brief',
       'od_create_project',
       'od_delete_project',
       'od_generate_design',
@@ -274,5 +275,38 @@ describe('write tools (PR-D) — integration', () => {
     const result = resp.result as { isError?: boolean; content: Array<{ text: string }> };
     expect(result.isError).toBe(true);
     expect(result.content[0].text.toLowerCase()).toContain('od daemon error');
+  });
+
+  it('od_compose_brief happy path — formats Turn 3 prompt', async () => {
+    const resp = await send({
+      method: 'tools/call',
+      params: {
+        name: 'od_compose_brief',
+        arguments: {
+          pagePrompt: 'Pricing page with 3 tiers',
+          briefAnswers: {
+            output: 'Pricing table',
+            platform: ['Responsive web'],
+          },
+          brandSpec: '# Brand\nAccent: blue',
+        },
+      },
+    });
+
+    const result = resp.result as {
+      content: Array<{ type: string; text: string }>;
+      isError?: boolean;
+    };
+    expect(result.isError).not.toBe(true);
+    expect(result.content).toHaveLength(1);
+    expect(result.content[0].type).toBe('text');
+    const text = result.content[0].text;
+    expect(text).toContain('[form answers — discovery]');
+    expect(text).toContain('- output: Pricing table');
+    expect(text).toContain('- platform: Responsive web');
+    expect(text).toContain('[brand spec]');
+    expect(text).toContain('# Brand');
+    expect(text).toContain('[page brief]');
+    expect(text).toContain('Pricing page with 3 tiers');
   });
 });

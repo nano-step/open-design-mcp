@@ -7,6 +7,7 @@ import { registerUpdateProject } from './update-project.js';
 import { registerDeleteProject } from './delete-project.js';
 import { registerSaveArtifact } from './save-artifact.js';
 import { registerLintArtifact } from './lint-artifact.js';
+import { registerComposeBrief } from './compose-brief.js';
 import { registerGenerateDesign } from './generate-design.js';
 
 export function registerAllTools(
@@ -21,5 +22,6 @@ export function registerAllTools(
   registerDeleteProject(server, client);
   registerSaveArtifact(server, client);
   registerLintArtifact(server, client);
+  registerComposeBrief(server);
   registerGenerateDesign(server, client, generateTimeoutMs);
 }

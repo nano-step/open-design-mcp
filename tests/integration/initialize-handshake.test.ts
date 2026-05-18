@@ -54,9 +54,10 @@ describe('open-design-mcp initialize handshake', () => {
     expect(proto).toBeDefined();
   });
 
-  it('lists the 8 tools', async () => {
+  it('lists the 9 tools', async () => {
     const result = await client.listTools();
     expect(result.tools.map((t) => t.name).sort()).toEqual([
+      'od_compose_brief',
       'od_create_project',
       'od_delete_project',
       'od_generate_design',

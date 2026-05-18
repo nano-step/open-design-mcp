@@ -10,7 +10,7 @@ A turn-by-turn Open Design playbook for OpenCode subagents. Transcribed from [ne
 
 ## Overview
 
-`open-design-mcp` ships 8 stateless MCP tools. They're hands, not a brain. This skill is the brain: a multi-turn workflow that drives an LLM through OD's full design arc using a combination of OpenCode's native tools (TodoWrite / Read / Write / Bash / WebFetch / Glob / Grep) and our `od_*` MCP tools.
+`open-design-mcp` ships 9 stateless MCP tools. They're hands, not a brain. This skill is the brain: a multi-turn workflow that drives an LLM through OD's full design arc using a combination of OpenCode's native tools (TodoWrite / Read / Write / Bash / WebFetch / Glob / Grep) and our `od_*` MCP tools.
 
 The architecture:
 
@@ -125,6 +125,7 @@ After `TodoWrite`, immediately mark step 1 `in_progress`. As each step completes
 | `Bash` | Shell exec | OpenCode's `bash` (prefix `rtk` for read/git) | — |
 | `WebFetch` | Fetch URL | OpenCode's `webfetch` | — |
 | `Glob` / `Grep` | File / content search | OpenCode's `glob` / `grep` | — |
+| `prompt_formatter_compose_brief` | Format Turn 3 prompt | — | `od_compose_brief` |
 | `live_artifacts_create` | Create artifact | — | `od_generate_design` → `od_save_artifact` |
 | `live_artifacts_update` | Update artifact | — | `od_save_artifact` (same slug → upsert) |
 | `live_artifacts_list` | List artifacts | — | `od_get_project` |
@@ -191,7 +192,7 @@ task(
 
 ## Related skills
 
-- **`open-design-mcp`** — the tool-reference skill. Catalog of 8 tools, env-var setup, error diagnosis, individual workflows (list / get / create / update / delete / generate / lint / save). Load this together with `od-workflow` for the full picture.
+- **`open-design-mcp`** — the tool-reference skill. Catalog of 9 tools, env-var setup, error diagnosis, individual workflows (list / get / create / update / delete / compose-brief / generate / lint / save). Load this together with `od-workflow` for the full picture.
 
 ## Related documentation
 
