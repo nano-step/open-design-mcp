@@ -8,6 +8,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.5.1] — 2026-05-18
+
+### Other
+- chore(byok-pipeline-tool): add typed OD HTTP client (PR-B, #8) (#18)
+
+**Install:** `npm install open-design-mcp@0.5.1`
+
+---
+
 ## [0.5.0] — 2026-05-18
 
 ### Documentation
