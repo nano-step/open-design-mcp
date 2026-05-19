@@ -21,7 +21,7 @@ Adapt the middle steps to the brief, but keep steps 1, 7, 8, 9 — they are non-
 3.  Plan section/slide/screen list with platform variants and rhythm
     (state list aloud before writing — "We'll build hero, features×3, pricing×3, FAQ×5, footer")
 
-4.  od_create_project (if no projectId yet) with customInstructions = brand spec
+4.  od_create_project { id: "<short-slug>", name, customInstructions: <brand spec> } (if no projectId yet — `id` is REQUIRED)
     OR identify the existing projectId from context
 
 5.  For each section/screen: od_generate_design { projectId, prompt: "<focused brief>" }
@@ -36,7 +36,7 @@ Adapt the middle steps to the brief, but keep steps 1, 7, 8, 9 — they are non-
 8.  5-dim critique: score yourself silently 1–5 on philosophy / hierarchy / execution / specificity / restraint
     Fix any dimension < 3/5. Two passes is normal.
 
-9.  od_lint_artifact + od_save_artifact for each section
+9.  od_lint_artifact { html } + od_save_artifact { identifier, title, html } for each section
     Catch malformed HTML before persisting.
 ```
 
@@ -111,7 +111,7 @@ One accent used at most twice, one decisive flourish — or three competing flou
 After all 9 plan items are complete:
 
 1. Final P0 check (no regressions introduced by late fixes)
-2. Emit the artifact via `od_save_artifact { projectId, slug, html }`
+2. Emit the artifact via `od_save_artifact { identifier, title, html }` (NOT project-scoped — daemon's global artifact store)
 3. (Recommended) Surface the artifact's URL to the user along with a one-sentence summary of what they're looking at
 4. Stop. Don't narrate after the artifact. The artifact is the deliverable.
 

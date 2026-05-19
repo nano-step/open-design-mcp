@@ -67,18 +67,18 @@ LLM output:
 ```
 1. Bind tech-utility palette + type stack to :root
 2. Plan the 6 sections: nav / hero / pricing-3-tier / comparison-table-8-rows / faq-6-q / footer
-3. od_create_project { name: "Acme Pricing", kind: "prototype", fidelity: "mid", customInstructions: "tech-utility direction: hairline 1px borders, tabular-nums on pricing, signal green only on active tier + primary CTA, system sans, JetBrains Mono for code, no shadows" }
+3. od_create_project { id: "acme-pricing", name: "Acme Pricing", kind: "prototype", fidelity: "mid", customInstructions: "tech-utility direction: hairline 1px borders, tabular-nums on pricing, signal green only on active tier + primary CTA, system sans, JetBrains Mono for code, no shadows" }
 4. od_compose_brief { pagePrompt: "Build the pricing page: 3-tier hero + 8-feature comparison + 6-FAQ accordion + footer. Real copy for a backend-dev-tools product. No invented stats.", briefAnswers: { audience: "backend developers at Series-A startups, mid-market SaaS buyers", tone: ["Tech / utility", "Modern minimal"] }, brandSpec: "tech-utility direction: hairline 1px borders, tabular-nums on pricing, signal green only on active tier + primary CTA, system sans, JetBrains Mono for code, no shadows" } → pass result to step 5
-5. od_generate_design { projectId, prompt: <result from step 4> }
-6. Lint the HTML
+5. od_generate_design { projectId, prompt: <result from step 4>, maxTokens: 40000 }
+6. od_lint_artifact { html: <generated> }
 7. Apply P0 checklist (anti-AI-slop from design-philosophy.md §C)
 8. 5-dim critique — fix anything < 3/5
-9. od_save_artifact { projectId, slug: "pricing-v1", html }
+9. od_save_artifact { identifier: "pricing-v1", title: "Acme Pricing", html }
 ```
 
 LLM marks step 1 `in_progress`, executes, marks `completed`. Repeats for each step live.
 
-**Step 3 result:** `{ project: { id: "proj-abc123", name: "Acme Pricing", ... } }`
+**Step 3 result:** `{ project: { id: "acme-pricing", name: "Acme Pricing", ... } }`
 
 **Step 4 result:** Formatted prompt string combining form answers, brand spec, and page brief.
 
@@ -97,7 +97,7 @@ LLM marks step 1 `in_progress`, executes, marks `completed`. Repeats for each st
 
 Two passes. Re-score: all 4+/5. Emit.
 
-**Step 9:** `od_save_artifact { projectId: "proj-abc123", slug: "pricing-v1", html: <final> }` → `{ saved: true, url: "..." }`
+**Step 9:** `od_save_artifact { identifier: "pricing-v1", title: "Acme Pricing", html: <final> }` → `{ path: "/app/.od/artifacts/<ts>-pricing-v1/index.html", url: "/artifacts/<ts>-pricing-v1/index.html" }` (saved to the daemon's **global** artifact store, NOT into the project — see [#46](https://github.com/nano-step/open-design-mcp/issues/46))
 
 ### Output to user
 
@@ -143,7 +143,7 @@ Bash: grep -E 'font-family' brand.css
 1. Read brand-spec.md
 2. Bind brand tokens to :root in deck template
 3. Plan 12 slides: 1 title / 1 problem / 1 product / 3 features / 2 traction / 1 GTM / 1 team / 1 ask / 1 thanks (rhythm: title-bold, content-pale, content-pale, content-bold...)
-4. od_create_project { name: "Acme Pitch", kind: "deck", fidelity: "high", customInstructions: <brand-spec contents> }
+4. od_create_project { id: "acme-pitch", name: "Acme Pitch", kind: "deck", fidelity: "high", customInstructions: <brand-spec contents> }
 5. Copy deck framework template verbatim (NOT writing custom scale-to-fit logic per §G)
 6. od_compose_brief { pagePrompt: "Generate slides 1-3: title, problem, product. Real copy for an enterprise SaaS investor audience.", brandSpec: <brand-spec contents from step 2> } → pass result to step 7
 7. od_generate_design { projectId, kind: "deck", prompt: <result from step 6> }
@@ -151,9 +151,9 @@ Bash: grep -E 'font-family' brand.css
 9. od_generate_design { projectId, kind: "deck", prompt: <result from step 8> }
 10. od_compose_brief { pagePrompt: "Generate slides 9-12: GTM, team, ask, thanks.", brandSpec: <brand-spec contents from step 2> } → pass result to step 11
 11. od_generate_design { projectId, kind: "deck", prompt: <result from step 10> }
-12. Lint each generated slide
+12. od_lint_artifact { html: <each generated slide> }
 13. P0 + 5-dim critique
-14. od_save_artifact { projectId, slug: "pitch-v1", html: <combined> }
+14. od_save_artifact { identifier: "pitch-v1", title: "Acme Pitch", html: <combined> }
 ```
 
 (Note step 7-11 split with `od_compose_brief`: each `od_generate_design` call is ~30s; splitting keeps each call short and lets the LLM run the critique on each segment. `od_compose_brief` ensures the brand spec is consistently threaded through each per-slide call without manual formatting.)

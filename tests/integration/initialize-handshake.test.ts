@@ -1,12 +1,17 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { spawn } from 'node:child_process';
 import { resolve } from 'node:path';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 import { startMockOdServer, type MockOdServer } from './helpers/od-mock-server.js';
 
 const BIN = resolve(__dirname, '../../dist/src/server.js');
+const PKG_VERSION = (
+  JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf8')) as {
+    version: string;
+  }
+).version;
 
 let sharedMock: MockOdServer;
 beforeAll(async () => {
@@ -46,7 +51,8 @@ describe('open-design-mcp initialize handshake', () => {
     const info = client.getServerVersion();
     expect(info).toBeDefined();
     expect(info?.name).toBe('open-design-mcp');
-    expect(info?.version).toBe('0.1.0');
+    expect(info?.version).toBe(PKG_VERSION);
+    expect(info?.version).not.toBe('0.1.0');
   });
 
   it('advertises a valid protocol version', () => {
