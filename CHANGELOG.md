@@ -38,6 +38,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.14.8] — 2026-05-19
+
+### Other
+- chore(openspec): archive fix-generate-design-maxtokens
+
+**Install:** `npm install open-design-mcp@0.14.8`
+
+---
+
 ## [0.14.7] — 2026-05-19
 
 ### Fixed
