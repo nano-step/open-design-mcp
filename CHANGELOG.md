@@ -42,6 +42,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.15.1] — 2026-05-19
+
+### Other
+- chore(openspec): archive add-od-save-project-file
+
+**Install:** `npm install open-design-mcp@0.15.1`
+
+---
+
 ## [0.15.0] — 2026-05-19
 
 ### Added
