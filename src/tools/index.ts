@@ -9,6 +9,7 @@ import { registerSaveArtifact } from './save-artifact.js';
 import { registerLintArtifact } from './lint-artifact.js';
 import { registerComposeBrief } from './compose-brief.js';
 import { registerGenerateDesign } from './generate-design.js';
+import { registerSaveProjectFile } from './save-project-file.js';
 
 export function registerAllTools(
   server: McpServer,
@@ -24,4 +25,5 @@ export function registerAllTools(
   registerLintArtifact(server, client);
   registerComposeBrief(server);
   registerGenerateDesign(server, client, generateTimeoutMs);
+  registerSaveProjectFile(server, client);
 }

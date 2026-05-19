@@ -127,7 +127,7 @@ describe('BYOK tools — integration', () => {
     server.stdin.write(JSON.stringify({ jsonrpc: '2.0', ...req }) + '\n');
   }
 
-  it('1. tools/list returns 9 tool names (sorted)', async () => {
+  it('1. tools/list returns 10 tool names (sorted)', async () => {
     const resp = await send({ method: 'tools/list' });
     const result = resp.result as { tools: Array<{ name: string }> };
     expect(result.tools.map((t) => t.name).sort()).toEqual([
@@ -139,6 +139,7 @@ describe('BYOK tools — integration', () => {
       'od_lint_artifact',
       'od_list_projects',
       'od_save_artifact',
+      'od_save_project_file',
       'od_update_project',
     ]);
   });

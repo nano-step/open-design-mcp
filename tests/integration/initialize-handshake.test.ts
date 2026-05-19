@@ -60,7 +60,7 @@ describe('open-design-mcp initialize handshake', () => {
     expect(proto).toBeDefined();
   });
 
-  it('lists the 9 tools', async () => {
+  it('lists the 10 tools', async () => {
     const result = await client.listTools();
     expect(result.tools.map((t) => t.name).sort()).toEqual([
       'od_compose_brief',
@@ -71,6 +71,7 @@ describe('open-design-mcp initialize handshake', () => {
       'od_lint_artifact',
       'od_list_projects',
       'od_save_artifact',
+      'od_save_project_file',
       'od_update_project',
     ]);
   });

@@ -173,3 +173,38 @@ LLM executes live. Marks todos `completed` as each step lands.
 **Example 2** shows Branch A (brand provided) with multi-call generation. The brand spec gets extracted once and stored as `customInstructions`. Then, for each per-slide generation (steps 7, 9, 11), `od_compose_brief` formats the prompt with the brand spec baked in — ensuring every slide inherits the brand without manual re-pasting. This is the **multi-page consistency story** working end-to-end.
 
 Both examples demonstrate the multi-step plan template, `od_compose_brief` formatting Turn 3 prompts, live TodoWrite updates, the P0 checklist, and the 5-dim critique — exactly the choreography from upstream OD, executed against our MCP.
+
+---
+
+## Example 3 — Saving a generated design inside a project with `od_save_project_file`
+
+After generating and linting a design (steps 5–9 above), save it into the project so it renders in the daemon UI:
+
+```
+Tool call: od_save_project_file
+Args: {
+  "projectId": "saas-pricing-v1",
+  "name": "index.html",
+  "content": "<full HTML from od_generate_design>"
+}
+
+Result:
+  Saved: index.html → project 'saas-pricing-v1'
+    size: 28400 bytes
+    kind: html
+    entry: index.html
+```
+
+Now `od_get_project { projectId: "saas-pricing-v1" }` returns the file in `files[]`:
+
+```
+Tool call: od_get_project
+Args: { "projectId": "saas-pricing-v1" }
+
+Result:
+  Project: saas-pricing-v1 — SaaS Pricing Page
+  Files (1):
+  - index.html (html)
+```
+
+**When to use `od_save_project_file` vs `od_save_artifact`:** Use `od_save_project_file` when you want the file visible in the project's daemon UI viewer. Use `od_save_artifact` for a global, shareable artifact URL that isn't tied to any project. You can use both — save to the project for the UI, and save as a global artifact for a shareable link.
