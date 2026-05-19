@@ -4,7 +4,7 @@ A stdio [Model Context Protocol](https://modelcontextprotocol.io/) server that b
 
 ## Status
 
-**v0.14.0 — 10 MCP tools live.** The server activates the full Open Design feature surface: list/inspect projects, save and lint artifacts, persist files inside projects, format Turn 3 prompts, and generate designs via BYOK with the full upstream system-prompt fidelity. See [open OpenSpec changes](openspec/changes/) for in-flight work and [closed changes](openspec/changes/archive/) for historical decisions.
+**v0.15.0 — 10 MCP tools live.** The server activates the full Open Design feature surface: list/inspect projects, save and lint artifacts, persist files inside projects, format Turn 3 prompts, and generate designs via BYOK with the full upstream system-prompt fidelity. See [open OpenSpec changes](openspec/changes/) for in-flight work and [closed changes](openspec/changes/archive/) for historical decisions.
 
 ## Tools
 

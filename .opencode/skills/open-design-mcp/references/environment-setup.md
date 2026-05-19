@@ -114,3 +114,41 @@ Call od_list_projects with no args.
 | `basic` | `Authorization: Basic <base64(OD_BASIC_USER:OD_BASIC_PASS)>` |
 
 Set in `src/od-client.ts` constructor. The same header rides on every HTTP call to the daemon, including the proxy path used by `od_generate_design`.
+
+## Running Against Multiple Daemons
+
+`OD_DAEMON_URL` is read **once at server startup** from the MCP client's `env` block. There is no per-call override — no tool accepts a `daemonUrl` argument, and trying to "just this one, hit the other daemon" mid-session is not possible (see [#49](https://github.com/nano-step/open-design-mcp/issues/49)).
+
+If you regularly need to target two daemons (e.g. local Docker for fast iteration + hosted for sharing the result), **register two MCP server entries** in your client config. Each entry runs an independent `open-design-mcp` process with its own env.
+
+OpenCode (`~/.config/opencode/opencode.json`):
+
+```jsonc
+{
+  "mcp": {
+    "open-design-local": {
+      "command": "npx",
+      "args": ["-y", "open-design-mcp"],
+      "env": {
+        "OD_DAEMON_URL": "http://ai-open-design:7456"
+        // + BYOK_* as needed
+      }
+    },
+    "open-design-hosted": {
+      "command": "npx",
+      "args": ["-y", "open-design-mcp"],
+      "env": {
+        "OD_DAEMON_URL": "https://od.thnkandgrow.com/",
+        "OD_AUTH_MODE": "basic",
+        "OD_BASIC_USER": "<user>",
+        "OD_BASIC_PASS": "<pass>"
+        // + BYOK_* as needed
+      }
+    }
+  }
+}
+```
+
+The tools then appear in two namespaces — e.g. OpenCode prefixes them as `open-design-local_od_list_projects` and `open-design-hosted_od_list_projects`. Call whichever namespace matches the daemon you want. Each server boots independently and validates its own `OD_DAEMON_URL` at startup, so a misconfigured one fails fast without breaking the other.
+
+**Memory cost:** Each entry is a separate Node process (~50–80 MB resident). Only register what you actually use.
