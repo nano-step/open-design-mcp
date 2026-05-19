@@ -1,0 +1,50 @@
+[form answers — discovery]
+- output: Single web prototype / landing
+- platform: Responsive web
+- audience: Backend developers evaluating dev tooling
+- tone: Modern minimal, Tech / utility
+- brand: pick_direction
+- scale: Single landing page, hero + features + pricing + FAQ
+- constraints: No fake metrics. No emoji icons. No purple gradients. Real copy only.
+
+[brand spec]
+# Brand Spec — tech-utility direction
+
+Direction: tech-utility (Datadog / GitHub style)
+Mood: Data-dense, monospace-friendly, light + grid. Made for engineers and operators who want information per square inch, not vibes.
+References: Datadog, GitHub, Cloudflare dashboard, Sentry
+
+## Typography
+
+- Display: `-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif`
+- Body: `-apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', system-ui, sans-serif`
+- Mono: `'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace`
+
+## Palette (OKLch — verbatim from direction library)
+
+```css
+--bg:      oklch(98% 0.005 250)
+--surface: oklch(100% 0 0)
+--fg:      oklch(22% 0.02 240)
+--muted:   oklch(50% 0.018 240)
+--border:  oklch(90% 0.008 240)
+--accent:  oklch(58% 0.16 145)   /* signal green */
+```
+
+## Layout Posture
+
+- Sans display + sans body (one family) — utility trumps editorial
+- Tabular numerics everywhere, mono for code / IDs / hashes
+- Dense tables with hairline borders, no row striping
+- Inline status pills (success / warn / danger) with restrained tinted backgrounds
+- Avoid: hero images, oversized headlines, marketing copy — show the product instead
+
+## Constraints (from brief)
+
+- No fake metrics (no "10× faster", "99.9% uptime")
+- No emoji icons
+- No purple/violet gradients
+- Real copy only — honest placeholders over invented stats
+
+[page brief]
+Landing page for `lithe` — a Go-based HTTP load balancer. Sections: hero with one-liner + install command, features (4-6 features for backend devs: HTTP/2, hot reload, observability, zero-config TLS), simple pricing (Free OSS + Cloud $99/mo + Enterprise contact), and 5-question FAQ. No invented metrics. No emoji icons. Use tech-utility direction.
