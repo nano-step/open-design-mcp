@@ -37,7 +37,7 @@ export function makeListProjectsHandler(client: OdClient) {
       const projects = res.projects.map((p) => ({
         id: p.id,
         name: p.name,
-        kind: (p as { kind?: string }).kind,
+        kind: ((p as { metadata?: { kind?: string } }).metadata?.kind) || (p as { kind?: string }).kind || undefined,
         status: (p as { statusInfo?: { displayStatus?: string } }).statusInfo?.displayStatus,
       }));
 

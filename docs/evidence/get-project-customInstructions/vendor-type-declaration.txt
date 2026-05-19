@@ -1,0 +1,20 @@
+  // pick a plugin they already selected.
+  appliedPluginSnapshotId?: string;
+  customInstructions?: string;
+}
+
+export interface ProjectTemplate {
+--
+  appliedPluginSnapshotId?: string;
+  pluginInputs?: Record<string, unknown>;
+  customInstructions?: string;
+  /** Persisted to metadata.skipDiscoveryBrief for automated project runs. */
+  skipDiscoveryBrief?: boolean;
+}
+--
+  pendingPrompt?: string | null;
+  metadata?: ProjectMetadata | null;
+  customInstructions?: string | null;
+}
+
+export interface ProjectsResponse {

@@ -126,12 +126,12 @@ describe('read-only tools (PR-C) — integration', () => {
     ]);
   });
 
-  it('od_list_projects happy path returns mapped projects', async () => {
+  it('od_list_projects happy path returns mapped projects with kind from metadata', async () => {
     mock.handle('GET', '/api/projects', (_req, res) => {
       respondJson(res, 200, {
         projects: [
-          { id: 'p1', name: 'Hello', kind: 'prototype', statusInfo: { displayStatus: 'succeeded' } },
-          { id: 'p2', name: 'World', kind: 'deck' },
+          { id: 'p1', name: 'Hello', metadata: { kind: 'prototype' }, statusInfo: { displayStatus: 'succeeded' } },
+          { id: 'p2', name: 'World', metadata: { kind: 'deck' } },
         ],
       });
     });
@@ -165,10 +165,19 @@ describe('read-only tools (PR-C) — integration', () => {
     expect(result.content[0].text.toLowerCase()).toContain('od daemon error');
   });
 
-  it('od_get_project happy path merges project + files', async () => {
+  it('od_get_project happy path merges project + files + customInstructions', async () => {
+    const brandSpec = 'Brand direction: warm-utility hybrid. PALETTE (OKLch): --bg: oklch(98% 0.005 160), --accent: oklch(56% 0.13 175). POSTURE: Code is hero content. ONE accent used at most TWICE per page. Hairline 1px borders only. Cards 12px radius. Whitespace > illustration. ANTI-SLOP: No gradients, no emojis, no robot mascots.';
     mock.handle('GET', '/api/projects/p1', (_req, res) => {
       respondJson(res, 200, {
-        project: { id: 'p1', name: 'Hello', kind: 'prototype' },
+        project: {
+          id: 'p1',
+          name: 'Hello',
+          metadata: { kind: 'prototype', customInstructions: brandSpec },
+          skillId: null,
+          designSystemId: null,
+          createdAt: 1716100000000,
+          updatedAt: 1716200000000,
+        },
         resolvedDir: '/tmp/od/p1',
       });
     });
@@ -181,17 +190,20 @@ describe('read-only tools (PR-C) — integration', () => {
     });
     const result = resp.result as {
       structuredContent: {
-        project: { id: string };
+        project: { id: string; customInstructions?: string };
         files: Array<{ path: string }>;
       };
+      content: Array<{ type: string; text: string }>;
       isError?: boolean;
     };
     expect(result.isError).not.toBe(true);
     expect(result.structuredContent.project.id).toBe('p1');
+    expect(result.structuredContent.project.customInstructions).toBe(brandSpec);
     expect(result.structuredContent.files.map((f) => f.path)).toEqual([
       'index.html',
       'style.css',
     ]);
+    expect(result.content[0].text).toMatch(/Custom Instructions \(\d+ chars\):\n.*Brand direction/s);
   });
 
   it('od_get_project 404 returns friendly "Project not found"', async () => {

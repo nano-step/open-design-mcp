@@ -11,7 +11,7 @@ A stdio [Model Context Protocol](https://modelcontextprotocol.io/) server that b
 | Tool | Verb | Env vars required | Description |
 |---|---|---|---|
 | `od_list_projects` | read | `OD_DAEMON_URL` | List all projects from the OD daemon. Returns `{projects: [{id, name, kind?, status?}, …]}`. |
-| `od_get_project` | read | `OD_DAEMON_URL` | Fetch a project + its artifact files. Merges `GET /api/projects/:id` and `GET /api/projects/:id/files`. |
+| `od_get_project` | read | `OD_DAEMON_URL` | Fetch a project + its artifact files. Merges `GET /api/projects/:id` and `GET /api/projects/:id/files`. Now also surfaces customInstructions, fidelity, skillId, designSystemId, createdAt, updatedAt when set on the project ([#56](https://github.com/nano-step/open-design-mcp/issues/56)). |
 | `od_create_project` | write | `OD_DAEMON_URL` | Create a new project. Requires a client-supplied `id` matching `/^[A-Za-z0-9._-]{1,128}$/` plus `name`; optional `kind`, `fidelity`, `customInstructions`, `skillId`, `designSystemId`, `pendingPrompt`. Returns the project details and an auto-seeded conversation ID. `customInstructions` is also mirrored to `metadata.customInstructions` for daemon compat ([#43](https://github.com/nano-step/open-design-mcp/issues/43)). |
 | `od_update_project` | write | `OD_DAEMON_URL` | Update a project's name, custom instructions, or metadata. At least one mutable field is required. `customInstructions` is also mirrored to `metadata.customInstructions` for daemon compat ([#43](https://github.com/nano-step/open-design-mcp/issues/43)). |
 | `od_delete_project` | write | `OD_DAEMON_URL` | PERMANENTLY delete a project (database row + on-disk directory). Cannot be undone. |

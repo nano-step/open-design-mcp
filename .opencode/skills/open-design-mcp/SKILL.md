@@ -47,7 +47,7 @@ Descriptions are verbatim from `src/tools/*.ts` — do not paraphrase when respo
 | Tool | Description | Env vars required |
 |---|---|---|
 | `od_list_projects` | List all projects from the configured Open Design daemon. Read-only; requires only `OD_DAEMON_URL`. | `OD_DAEMON_URL` |
-| `od_get_project` | Fetch a project + its artifact files. Read-only; requires only `OD_DAEMON_URL`. | `OD_DAEMON_URL` |
+| `od_get_project` | Fetch a project + its artifact files. Read-only; requires only `OD_DAEMON_URL`. Output includes customInstructions if set on the project (user-supplied content). | `OD_DAEMON_URL` |
 | `od_create_project` | Create a new project on the Open Design daemon. Returns the project details and an auto-seeded conversation ID. Requires only `OD_DAEMON_URL`. | `OD_DAEMON_URL` |
 | `od_update_project` | Update a project on the Open Design daemon. At least one mutable field (name, customInstructions, kind, fidelity, linkedDirs) must be provided. Requires only `OD_DAEMON_URL`. | `OD_DAEMON_URL` |
 | `od_delete_project` | **PERMANENTLY** delete a project. The Open Design daemon removes the database row AND the on-disk project directory. This cannot be undone. Requires only `OD_DAEMON_URL`. | `OD_DAEMON_URL` |

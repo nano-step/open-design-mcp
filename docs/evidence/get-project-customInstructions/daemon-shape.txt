@@ -1,0 +1,11 @@
+project: dict
+  id: str(len=20)
+  name: str(len=27)
+  skillId: NoneType = None
+  designSystemId: NoneType = None
+  metadata: dict
+    kind: str(len=9)
+    fidelity: str(len=13)
+    customInstructions: str(len=3928)
+  createdAt: int = 1779194381496
+  updatedAt: int = 1779194381496
