@@ -109,7 +109,7 @@ describe('write tools (PR-D) — integration', () => {
     server.stdin.write(JSON.stringify({ jsonrpc: '2.0', ...req }) + '\n');
   }
 
-  it('tools/list returns all 9 tools', async () => {
+  it('tools/list returns all 10 tools', async () => {
     const resp = await send({ method: 'tools/list' });
     const result = resp.result as { tools: Array<{ name: string }> };
     expect(result.tools.map((t) => t.name).sort()).toEqual([
@@ -121,6 +121,7 @@ describe('write tools (PR-D) — integration', () => {
       'od_lint_artifact',
       'od_list_projects',
       'od_save_artifact',
+      'od_save_project_file',
       'od_update_project',
     ]);
   });

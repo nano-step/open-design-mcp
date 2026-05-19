@@ -10,7 +10,7 @@ A turn-by-turn Open Design playbook for OpenCode subagents. Transcribed from [ne
 
 ## Overview
 
-`open-design-mcp` ships 9 stateless MCP tools. They're hands, not a brain. This skill is the brain: a multi-turn workflow that drives an LLM through OD's full design arc using a combination of OpenCode's native tools (TodoWrite / Read / Write / Bash / WebFetch / Glob / Grep) and our `od_*` MCP tools.
+`open-design-mcp` ships 10 stateless MCP tools. They're hands, not a brain. This skill is the brain: a multi-turn workflow that drives an LLM through OD's full design arc using a combination of OpenCode's native tools (TodoWrite / Read / Write / Bash / WebFetch / Glob / Grep) and our `od_*` MCP tools.
 
 The architecture:
 
@@ -108,6 +108,7 @@ Once the brand/direction is locked, the **first tool call** is `TodoWrite` with 
 7. Self-check: run the P0 anti-AI-slop checklist (every P0 must pass)
 8. 5-dim critique: philosophy / hierarchy / execution / specificity / restraint; fix any dimension < 3/5
 9. od_lint_artifact { html: <full HTML> } + od_save_artifact { identifier, title, html } for each section
+9b. (optional) od_save_project_file { projectId, name: "index.html", content: <html> } to save the file inside the project so it renders in the daemon UI (use instead of or in addition to od_save_artifact; see "od_save_project_file vs od_save_artifact" below)
 ```
 
 After `TodoWrite`, immediately mark step 1 `in_progress`. As each step completes, update — do NOT batch updates at the end of the turn; the live progress is the point.
@@ -129,6 +130,7 @@ After `TodoWrite`, immediately mark step 1 `in_progress`. As each step completes
 | `live_artifacts_create` | Create artifact | — | `od_generate_design` → `od_save_artifact { identifier, title, html }` (global store, NOT project-scoped) |
 | `live_artifacts_update` | Update artifact | — | `od_save_artifact` (same `identifier` → new timestamped dir) |
 | `live_artifacts_list` | List artifacts | — | `od_get_project` (note: returns project's `files`, NOT global artifacts saved via `od_save_artifact`) |
+| — | Save file inside project | — | `od_save_project_file { projectId, name, content }` (project-scoped; appears in `od_get_project.files[]`) |
 | `connectors_list` / `connectors_execute` | OAuth data extraction | **NOT AVAILABLE** — ask user for data manually | — |
 
 ## Multi-page consistency (the new hot path)
@@ -195,7 +197,7 @@ task(
 
 ## Related skills
 
-- **`open-design-mcp`** — the tool-reference skill. Catalog of 9 tools, env-var setup, error diagnosis, individual workflows (list / get / create / update / delete / compose-brief / generate / lint / save). Load this together with `od-workflow` for the full picture.
+- **`open-design-mcp`** — the tool-reference skill. Catalog of 10 tools, env-var setup, error diagnosis, individual workflows (list / get / create / update / delete / compose-brief / generate / lint / save-artifact / save-project-file). Load this together with `od-workflow` for the full picture.
 
 ## Related documentation
 

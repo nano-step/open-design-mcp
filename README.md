@@ -4,7 +4,7 @@ A stdio [Model Context Protocol](https://modelcontextprotocol.io/) server that b
 
 ## Status
 
-**v0.14.0 — 9 MCP tools live.** The server activates the full Open Design feature surface: list/inspect projects, save and lint artifacts, format Turn 3 prompts, and generate designs via BYOK with the full upstream system-prompt fidelity. See [open OpenSpec changes](openspec/changes/) for in-flight work and [closed changes](openspec/changes/archive/) for historical decisions.
+**v0.14.0 — 10 MCP tools live.** The server activates the full Open Design feature surface: list/inspect projects, save and lint artifacts, persist files inside projects, format Turn 3 prompts, and generate designs via BYOK with the full upstream system-prompt fidelity. See [open OpenSpec changes](openspec/changes/) for in-flight work and [closed changes](openspec/changes/archive/) for historical decisions.
 
 ## Tools
 
@@ -16,11 +16,14 @@ A stdio [Model Context Protocol](https://modelcontextprotocol.io/) server that b
 | `od_update_project` | write | `OD_DAEMON_URL` | Update a project's name, custom instructions, or metadata. At least one mutable field is required. `customInstructions` is also mirrored to `metadata.customInstructions` for daemon compat ([#43](https://github.com/nano-step/open-design-mcp/issues/43)). |
 | `od_delete_project` | write | `OD_DAEMON_URL` | PERMANENTLY delete a project (database row + on-disk directory). Cannot be undone. |
 | `od_save_artifact` | write | `OD_DAEMON_URL` | Persist an HTML artifact to the daemon's **global** artifact store at `/app/.od/artifacts/<timestamp>-<identifier>/index.html`. Args: `identifier` (URL-safe slug, `/^[a-z0-9-]+$/`, 3–64 chars), `title` (human-readable, 1–200 chars), `html` (full document). NOT project-scoped — saved artifacts do not appear in `od_get_project.files`. Returns the saved path + URL. |
+| `od_save_project_file` | write | `OD_DAEMON_URL` | Persist a file **inside a project** so it appears in `od_get_project.files[]` and renders in the daemon UI. Wraps `POST /api/projects/:id/files`. Args: `projectId` (1–128 chars), `name` (file name, no path separators, 1–255 chars), `content` (string, max ~5 MB). Unlike `od_save_artifact` (global store), this is project-scoped — use it when you want the file to show up under the project's viewer. |
 | `od_lint_artifact` | validate | `OD_DAEMON_URL` | Lint a raw HTML document. Takes `{ html }` only — inline content, not a project/slug reference. Returns findings + agent message. |
 | `od_compose_brief` | format | none | Format a Turn 3 prompt for od_generate_design. Combines form answers, brand spec, and page brief into a string upstream Open Design recognizes. Pure function — no network, no env vars. |
 | `od_generate_design` | generate (streaming) | `OD_DAEMON_URL` + `BYOK_BASE_URL` + `BYOK_API_KEY` + `BYOK_MODEL` (`BYOK_PROVIDER` optional, defaults to `openai`) | Generate a design via the BYOK pipeline. Composes the upstream Open Design system prompt and proxies through the OD daemon's `/api/proxy/<provider>/stream`. Returns the accumulated text. Reads `customInstructions` from `metadata.customInstructions` first, then top-level field ([#43](https://github.com/nano-step/open-design-mcp/issues/43)). Accepts `maxTokens` (default 64000) to control completion length — see [#36](https://github.com/nano-step/open-design-mcp/issues/36). |
 
-Only `od_generate_design` requires the BYOK vars. The other 8 tools work with just `OD_DAEMON_URL` (or no env vars in the case of `od_compose_brief`).
+Only `od_generate_design` requires the BYOK vars. The other 9 tools work with just `OD_DAEMON_URL` (or no env vars in the case of `od_compose_brief`).
+
+**`od_save_project_file` vs `od_save_artifact`:** These two write tools serve different storage scopes. `od_save_artifact` writes to the daemon's **global** artifact store — useful for shareable URLs that aren't tied to a project. `od_save_project_file` writes **inside a project's directory** so the file appears in `od_get_project.files[]` and renders in the daemon's project UI. Use `od_save_project_file` when you want the generated design to live inside the project; use `od_save_artifact` for standalone, project-unaware artifacts.
 
 ## How it works
 

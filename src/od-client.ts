@@ -1,13 +1,14 @@
 /**
  * od-client: HTTP wrapper for the Open Design daemon.
  *
- * Wraps the 9 endpoints the MCP server needs:
+ * Wraps the 10 endpoints the MCP server needs:
  *   - GET    /api/projects                          → listProjects
  *   - GET    /api/projects/:id                      → getProject
  *   - GET    /api/projects/:id/files                → listFiles
  *   - POST   /api/projects                          → createProject
  *   - PATCH  /api/projects/:id                      → updateProject
  *   - DELETE /api/projects/:id                      → deleteProject
+ *   - POST   /api/projects/:id/files                → saveProjectFile
  *   - POST   /api/proxy/<provider>/stream           → proxyStream
  *   - POST   /api/artifacts/save                    → saveArtifact
  *   - POST   /api/artifacts/lint                    → lintArtifact
@@ -22,7 +23,10 @@ import type {
   CreateProjectResponse,
   UpdateProjectRequest,
 } from '../vendor/od-contracts/src/api/projects.js';
-import type { ProjectFilesResponse } from '../vendor/od-contracts/src/api/files.js';
+import type {
+  ProjectFileResponse,
+  ProjectFilesResponse,
+} from '../vendor/od-contracts/src/api/files.js';
 import type {
   SaveArtifactRequest,
   SaveArtifactResponse,
@@ -52,6 +56,16 @@ export interface ArtifactLintFinding {
 export interface ArtifactLintResponse {
   findings: ArtifactLintFinding[];
   agentMessage?: string;
+}
+
+/**
+ * Request body for POST /api/projects/:id/files.
+ * Only this type is defined locally — the response uses the vendor's
+ * canonical ProjectFile / ProjectFileResponse types.
+ */
+export interface SaveProjectFileRequest {
+  name: string;
+  content: string;
 }
 
 /**
@@ -195,6 +209,18 @@ export class OdClient {
     return this.postJson<ArtifactLintResponse>(
       '/api/artifacts/lint',
       { html },
+      signal,
+    );
+  }
+
+  async saveProjectFile(
+    projectId: string,
+    body: SaveProjectFileRequest,
+    signal: AbortSignal,
+  ): Promise<ProjectFileResponse> {
+    return this.postJson<ProjectFileResponse>(
+      `/api/projects/${encodeURIComponent(projectId)}/files`,
+      body,
       signal,
     );
   }
