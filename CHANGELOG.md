@@ -40,6 +40,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.14.10] — 2026-05-19
+
+### Other
+- chore: doc-drift cleanup + dynamic serverInfo.version (closes #45 #46 #47 #48) (#52)
+
+**Install:** `npm install open-design-mcp@0.14.10`
+
+---
+
 ## [0.14.9] — 2026-05-19
 
 ### Documentation
