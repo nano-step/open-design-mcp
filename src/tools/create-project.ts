@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { OdClient } from '../od-client.js';
 import type { ProjectMetadata } from '../../vendor/od-contracts/src/api/projects.js';
+import type { ProjectMetadataWithStash } from '../types/metadata-stash.js';
 import { mapErrorToToolResult } from './errors.js';
 
 const inputSchema = z.object({
@@ -52,13 +53,20 @@ export function makeCreateProjectHandler(client: OdClient) {
         extra?.signal ?? new AbortController().signal,
       ]);
 
-      const metadata: ProjectMetadata | undefined =
-        args.kind || args.fidelity
-          ? {
-              kind: (args.kind ?? 'prototype') as ProjectMetadata['kind'],
-              fidelity: (args.fidelity ?? undefined) as ProjectMetadata['fidelity'],
-            }
-          : undefined;
+      const hasMetadataFields = args.kind || args.fidelity;
+      const metadataBase: ProjectMetadata | undefined = hasMetadataFields
+        ? {
+            kind: (args.kind ?? 'prototype') as ProjectMetadata['kind'],
+            fidelity: (args.fidelity ?? undefined) as ProjectMetadata['fidelity'],
+          }
+        : undefined;
+
+      // Stash customInstructions in metadata for daemon compat (#43).
+      const ciValue = args.customInstructions ?? undefined;
+      const metadata: ProjectMetadataWithStash | undefined =
+        ciValue !== undefined
+          ? { kind: 'prototype' as const, ...metadataBase, customInstructions: ciValue }
+          : metadataBase;
 
       const res = await client.createProject(
         {

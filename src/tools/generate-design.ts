@@ -7,6 +7,7 @@ import { parseOdSse } from '../sse-parser.js';
 import { getByokConfig, type ByokConfig } from '../config.js';
 import { composeSystemPrompt } from '../../vendor/od-contracts/src/prompts/system.js';
 import type { ProjectKind } from '../../vendor/od-contracts/src/api/projects.js';
+import type { ProjectMetadataWithStash } from '../types/metadata-stash.js';
 import { mapErrorToToolResult } from './errors.js';
 
 const KIND_VALUES = [
@@ -116,7 +117,10 @@ export function makeGenerateDesignHandler(
 
       try {
         const detail = await client.getProject(args.projectId, earlyCombined);
-        storedCustomInstructions = detail.project.customInstructions || undefined;
+        // Metadata stash first (daemon round-trips this), top-level second (#43).
+        const md = detail.project.metadata as ProjectMetadataWithStash | undefined;
+        storedCustomInstructions =
+          md?.customInstructions || detail.project.customInstructions || undefined;
       } catch (err) {
         return mapErrorToToolResult(err, client.authMode);
       }
@@ -253,7 +257,7 @@ export function registerGenerateDesign(
     {
       title: 'Generate a design via BYOK pipeline',
       description:
-        "Generate a design artifact using BYOK. Composes the upstream Open Design system prompt and proxies through OD's /api/proxy/<provider>/stream endpoint. Requires BYOK_BASE_URL, BYOK_API_KEY, BYOK_MODEL env vars in addition to OD_DAEMON_URL. When projectId is provided, the project's stored customInstructions are merged into the system prompt (set brand rules once via od_create_project or od_update_project; per-call projectInstructions wins on conflict). Long prompts (full pages) can take 5-10 minutes — server timeout defaults to 10 min, configurable via OD_GENERATE_TIMEOUT_MS. On abort or timeout mid-stream, accumulated tokens are returned as partial HTML with a trailing comment marker and isError=true.",
+        "Generate a design artifact using BYOK. Composes the upstream Open Design system prompt and proxies through OD's /api/proxy/<provider>/stream endpoint. Requires BYOK_BASE_URL, BYOK_API_KEY, BYOK_MODEL env vars in addition to OD_DAEMON_URL. When projectId is provided, the project's stored customInstructions are merged into the system prompt — read precedence is metadata.customInstructions first (daemon-compat stash, see #43), then top-level customInstructions, then the per-call projectInstructions field; per-call projectInstructions wins on conflict with the stored value. Set brand rules once via od_create_project or od_update_project. Long prompts (full pages) can take 5-10 minutes — server timeout defaults to 10 min, configurable via OD_GENERATE_TIMEOUT_MS. On abort or timeout mid-stream, accumulated tokens are returned as partial HTML with a trailing comment marker and isError=true.",
       inputSchema: inputSchema.shape,
       // No outputSchema — generated text is freeform (design §B10).
     },

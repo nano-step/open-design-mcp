@@ -12,13 +12,13 @@ A stdio [Model Context Protocol](https://modelcontextprotocol.io/) server that b
 |---|---|---|---|
 | `od_list_projects` | read | `OD_DAEMON_URL` | List all projects from the OD daemon. Returns `{projects: [{id, name, kind?, status?}, …]}`. |
 | `od_get_project` | read | `OD_DAEMON_URL` | Fetch a project + its artifact files. Merges `GET /api/projects/:id` and `GET /api/projects/:id/files`. |
-| `od_create_project` | write | `OD_DAEMON_URL` | Create a new project. Returns the project details and an auto-seeded conversation ID. |
-| `od_update_project` | write | `OD_DAEMON_URL` | Update a project's name, custom instructions, or metadata. At least one mutable field is required. |
+| `od_create_project` | write | `OD_DAEMON_URL` | Create a new project. Returns the project details and an auto-seeded conversation ID. `customInstructions` is also mirrored to `metadata.customInstructions` for daemon compat ([#43](https://github.com/nano-step/open-design-mcp/issues/43)). |
+| `od_update_project` | write | `OD_DAEMON_URL` | Update a project's name, custom instructions, or metadata. At least one mutable field is required. `customInstructions` is also mirrored to `metadata.customInstructions` for daemon compat ([#43](https://github.com/nano-step/open-design-mcp/issues/43)). |
 | `od_delete_project` | write | `OD_DAEMON_URL` | PERMANENTLY delete a project (database row + on-disk directory). Cannot be undone. |
 | `od_save_artifact` | write | `OD_DAEMON_URL` | Persist an HTML artifact under a URL-safe slug. Returns the saved path + URL. |
 | `od_lint_artifact` | validate | `OD_DAEMON_URL` | Validate an HTML artifact structurally. Returns findings + agent message. |
 | `od_compose_brief` | format | none | Format a Turn 3 prompt for od_generate_design. Combines form answers, brand spec, and page brief into a string upstream Open Design recognizes. Pure function — no network, no env vars. |
-| `od_generate_design` | generate (streaming) | `OD_DAEMON_URL` + `BYOK_BASE_URL` + `BYOK_API_KEY` + `BYOK_MODEL` (`BYOK_PROVIDER` optional, defaults to `openai`) | Generate a design via the BYOK pipeline. Composes the upstream Open Design system prompt and proxies through the OD daemon's `/api/proxy/<provider>/stream`. Returns the accumulated text. |
+| `od_generate_design` | generate (streaming) | `OD_DAEMON_URL` + `BYOK_BASE_URL` + `BYOK_API_KEY` + `BYOK_MODEL` (`BYOK_PROVIDER` optional, defaults to `openai`) | Generate a design via the BYOK pipeline. Composes the upstream Open Design system prompt and proxies through the OD daemon's `/api/proxy/<provider>/stream`. Returns the accumulated text. Reads `customInstructions` from `metadata.customInstructions` first, then top-level field ([#43](https://github.com/nano-step/open-design-mcp/issues/43)). |
 
 Only `od_generate_design` requires the BYOK vars. The other 8 tools work with just `OD_DAEMON_URL` (or no env vars in the case of `od_compose_brief`).
 
