@@ -43,6 +43,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.15.2] — 2026-05-19
+
+### Documentation
+- docs: refresh skill catalog + document multi-daemon pattern (closes #49) (#55)
+
+**Install:** `npm install open-design-mcp@0.15.2`
+
+---
+
 ## [0.15.1] — 2026-05-19
 
 ### Other
