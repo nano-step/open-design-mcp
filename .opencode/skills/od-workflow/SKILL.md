@@ -141,6 +141,8 @@ After issue #37 (PR #40) shipped, `od_generate_design` accepts an optional `proj
 
 See [references/workflow-examples.md](references/workflow-examples.md) for a fully-worked multi-page transcript.
 
+**Note:** `customInstructions` is stashed in `metadata.customInstructions` on create/update and read from there first on generate (daemon compat, [#43](https://github.com/nano-step/open-design-mcp/issues/43)). This is transparent to callers.
+
 ## Anti-AI-slop checklist (concise; full in references)
 
 > Transcribed from upstream `discovery.ts:221-232` (Apache 2.0).

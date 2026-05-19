@@ -96,4 +96,21 @@ describe('makeUpdateProjectHandler', () => {
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('OD daemon unreachable');
   });
+
+  it('customInstructions → patch includes BOTH top-level and metadata.customInstructions (issue #43)', async () => {
+    const updateFn = vi.fn().mockResolvedValue({
+      project: { id: 'p1', name: 'Test' },
+      resolvedDir: '/tmp/od/p1',
+    });
+    const client = makeStubClient({ updateProject: updateFn });
+    const handler = makeUpdateProjectHandler(client);
+    await handler(
+      { projectId: 'p1', customInstructions: 'brand: indigo' },
+      { signal: new AbortController().signal },
+    );
+
+    const [, patch] = updateFn.mock.calls[0];
+    expect(patch.customInstructions).toBe('brand: indigo');
+    expect(patch.metadata.customInstructions).toBe('brand: indigo');
+  });
 });

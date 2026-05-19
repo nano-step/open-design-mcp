@@ -512,6 +512,58 @@ describe('makeGenerateDesignHandler', () => {
     expect(getProjectMock).not.toHaveBeenCalled();
     expect(proxyStreamMock).toHaveBeenCalledOnce();
   });
+
+  it('27. projectId + only metadata.customInstructions present → composeSystemPrompt receives stashed value (issue #43)', async () => {
+    const proxyStreamMock = vi.fn().mockResolvedValue(
+      sseResponse(['event: end\ndata: {}\n\n']),
+    );
+    const getProjectMock = vi.fn().mockResolvedValue({
+      project: {
+        id: 'p',
+        name: 'P',
+        metadata: { kind: 'page', customInstructions: 'STASHED brand rules' },
+      },
+      resolvedDir: '/tmp/p',
+    });
+    const client = makeStubClient({
+      proxyStream: proxyStreamMock,
+      getProject: getProjectMock,
+    });
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
+    await handler(
+      { prompt: 'pricing page', kind: 'prototype', projectId: 'p' },
+      {},
+    );
+    const proxyReq = proxyStreamMock.mock.calls[0][0];
+    expect(proxyReq.systemPrompt).toContain('STASHED brand rules');
+  });
+
+  it('28. projectId + BOTH metadata and top-level set → metadata wins (issue #43)', async () => {
+    const proxyStreamMock = vi.fn().mockResolvedValue(
+      sseResponse(['event: end\ndata: {}\n\n']),
+    );
+    const getProjectMock = vi.fn().mockResolvedValue({
+      project: {
+        id: 'p',
+        name: 'P',
+        customInstructions: 'TOP_LEVEL',
+        metadata: { kind: 'page', customInstructions: 'METADATA_STASH' },
+      },
+      resolvedDir: '/tmp/p',
+    });
+    const client = makeStubClient({
+      proxyStream: proxyStreamMock,
+      getProject: getProjectMock,
+    });
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
+    await handler(
+      { prompt: 'pricing page', kind: 'prototype', projectId: 'p' },
+      {},
+    );
+    const proxyReq = proxyStreamMock.mock.calls[0][0];
+    expect(proxyReq.systemPrompt).toContain('METADATA_STASH');
+    expect(proxyReq.systemPrompt).not.toContain('TOP_LEVEL');
+  });
 });
 
 describe('mergeProjectInstructions (issue #37)', () => {

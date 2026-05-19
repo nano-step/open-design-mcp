@@ -2,6 +2,7 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { OdClient } from '../od-client.js';
 import type { ProjectMetadata } from '../../vendor/od-contracts/src/api/projects.js';
+import type { ProjectMetadataWithStash } from '../types/metadata-stash.js';
 import { mapErrorToToolResultWith404 } from './errors.js';
 
 const inputSchema = z
@@ -55,14 +56,25 @@ export function makeUpdateProjectHandler(client: OdClient) {
         extra?.signal ?? new AbortController().signal,
       ]);
 
-      const metadata: Partial<ProjectMetadata> | undefined =
-        kind !== undefined || fidelity !== undefined || linkedDirs !== undefined
-          ? {
-              kind: (kind ?? undefined) as ProjectMetadata['kind'] | undefined,
-              fidelity: (fidelity ?? undefined) as ProjectMetadata['fidelity'],
-              linkedDirs: linkedDirs ?? undefined,
-            }
-          : undefined;
+      const hasMetadataFields =
+        kind !== undefined || fidelity !== undefined || linkedDirs !== undefined;
+      const metadataBase: Partial<ProjectMetadata> | undefined = hasMetadataFields
+        ? {
+            kind: (kind ?? undefined) as ProjectMetadata['kind'] | undefined,
+            fidelity: (fidelity ?? undefined) as ProjectMetadata['fidelity'],
+            linkedDirs: linkedDirs ?? undefined,
+          }
+        : undefined;
+
+      // Stash customInstructions in metadata for daemon compat (#43).
+      // Known limitation: clearing via `customInstructions: null` may leave a
+      // stale stash if the daemon shallow-merges metadata; daemon merge
+      // semantics not empirically tested. Re-set to a new value to overwrite.
+      const stashValue = customInstructions ?? undefined;
+      const metadata: Partial<ProjectMetadataWithStash> | undefined =
+        customInstructions !== undefined
+          ? { ...metadataBase, customInstructions: stashValue }
+          : metadataBase;
 
       const patch: Record<string, unknown> = {};
       if (name !== undefined) patch.name = name;

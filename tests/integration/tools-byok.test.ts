@@ -274,4 +274,45 @@ describe('BYOK tools — integration', () => {
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('upstream provider error');
   });
+
+  it('6. metadata.customInstructions round-trip — daemon omits top-level field (issue #43)', async () => {
+    const marker = 'MARKER-7K3X-stash-roundtrip';
+    let capturedSystemPrompt = '';
+
+    mock.handle('GET', /^\/api\/projects\/proj-stash$/, (_req, res) => {
+      respondJson(res, 200, {
+        project: {
+          id: 'proj-stash',
+          name: 'Stash Test',
+          skillId: null,
+          designSystemId: null,
+          createdAt: 0,
+          updatedAt: 0,
+          metadata: { kind: 'page', customInstructions: marker },
+        },
+        resolvedDir: '/tmp/proj-stash',
+      });
+    });
+
+    mock.handle('POST', '/api/proxy/openai/stream', (_req, res, body) => {
+      const parsed = JSON.parse(body) as { systemPrompt?: string };
+      capturedSystemPrompt = parsed.systemPrompt ?? '';
+      respondSse(res, [
+        { event: 'start', data: { model: 'open-design' } },
+        { event: 'delta', data: { delta: 'OK' } },
+        { event: 'end', data: {} },
+      ]);
+    });
+
+    const resp = await send({
+      method: 'tools/call',
+      params: {
+        name: 'od_generate_design',
+        arguments: { prompt: 'Test stash', projectId: 'proj-stash' },
+      },
+    });
+    const result = resp.result as { isError?: boolean; content: Array<{ text: string }> };
+    expect(result.isError).not.toBe(true);
+    expect(capturedSystemPrompt).toContain(marker);
+  });
 });

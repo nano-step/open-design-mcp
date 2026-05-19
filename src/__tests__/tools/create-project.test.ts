@@ -111,4 +111,21 @@ describe('makeCreateProjectHandler', () => {
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('OD daemon unreachable');
   });
+
+  it('customInstructions → create body includes BOTH top-level and metadata.customInstructions (issue #43)', async () => {
+    const createFn = vi.fn().mockResolvedValue({
+      project: { id: 'p1', name: 'Test' },
+      conversationId: 'c1',
+    });
+    const client = makeStubClient({ createProject: createFn });
+    const handler = makeCreateProjectHandler(client);
+    await handler(
+      { id: 'p1', name: 'Test', customInstructions: 'use dark theme' },
+      { signal: new AbortController().signal },
+    );
+
+    const body = createFn.mock.calls[0][0];
+    expect(body.customInstructions).toBe('use dark theme');
+    expect(body.metadata.customInstructions).toBe('use dark theme');
+  });
 });
