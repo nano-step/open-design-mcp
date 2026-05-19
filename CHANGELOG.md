@@ -41,6 +41,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.15.0] — 2026-05-19
+
+### Added
+- feat: add od_save_project_file MCP tool (closes #53) (#54)
+
+**Install:** `npm install open-design-mcp@0.15.0`
+
+---
+
 ## [0.14.10] — 2026-05-19
 
 ### Other
