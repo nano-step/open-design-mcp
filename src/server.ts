@@ -10,6 +10,9 @@
  * lazily — server boots successfully with only OD_DAEMON_URL set.
  */
 
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { loadCoreConfig } from './config.js';
@@ -17,7 +20,31 @@ import { OdClient } from './od-client.js';
 import { registerAllTools } from './tools/index.js';
 
 const SERVER_NAME = 'open-design-mcp';
-const SERVER_VERSION = '0.1.0';  // HB-5 — still hard-coded, separate change
+
+function tryReadOwnPackageVersion(startDir: string): string | null {
+  for (const rel of ['..', '../..', '../../..']) {
+    const candidate = resolve(startDir, rel, 'package.json');
+    let raw: string;
+    try {
+      raw = readFileSync(candidate, 'utf8');
+    } catch {
+      continue;
+    }
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      (parsed as { name?: unknown }).name === SERVER_NAME &&
+      typeof (parsed as { version?: unknown }).version === 'string'
+    ) {
+      return (parsed as { version: string }).version;
+    }
+  }
+  return null;
+}
+
+const SERVER_VERSION =
+  tryReadOwnPackageVersion(dirname(fileURLToPath(import.meta.url))) ?? 'unknown';
 
 async function main(): Promise<void> {
   // Eager core config validation. Process exits with friendly stderr on

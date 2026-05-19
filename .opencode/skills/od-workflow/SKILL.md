@@ -102,12 +102,12 @@ Once the brand/direction is locked, the **first tool call** is `TodoWrite` with 
    (Active DESIGN.md) Bind active design-system tokens to :root
    (Branch B) Pick a direction from the library, bind to :root
 3. Plan section/slide/screen list with platform variants and rhythm
-4. od_create_project (if no projectId yet) with customInstructions = brand spec
-5. For each section/screen: od_generate_design { projectId, prompt }
+4. od_create_project { id: "<short-slug>", name, customInstructions: <brand spec> } (if no projectId yet — `id` is REQUIRED, regex `/^[A-Za-z0-9._-]{1,128}$/`)
+5. For each section/screen: od_generate_design { projectId, prompt, maxTokens? }
 6. Replace any [REPLACE] placeholders with real, specific copy from the brief
 7. Self-check: run the P0 anti-AI-slop checklist (every P0 must pass)
 8. 5-dim critique: philosophy / hierarchy / execution / specificity / restraint; fix any dimension < 3/5
-9. od_lint_artifact + od_save_artifact for each section
+9. od_lint_artifact { html: <full HTML> } + od_save_artifact { identifier, title, html } for each section
 ```
 
 After `TodoWrite`, immediately mark step 1 `in_progress`. As each step completes, update — do NOT batch updates at the end of the turn; the live progress is the point.
@@ -126,16 +126,16 @@ After `TodoWrite`, immediately mark step 1 `in_progress`. As each step completes
 | `WebFetch` | Fetch URL | OpenCode's `webfetch` | — |
 | `Glob` / `Grep` | File / content search | OpenCode's `glob` / `grep` | — |
 | `prompt_formatter_compose_brief` | Format Turn 3 prompt | — | `od_compose_brief` |
-| `live_artifacts_create` | Create artifact | — | `od_generate_design` → `od_save_artifact` |
-| `live_artifacts_update` | Update artifact | — | `od_save_artifact` (same slug → upsert) |
-| `live_artifacts_list` | List artifacts | — | `od_get_project` |
+| `live_artifacts_create` | Create artifact | — | `od_generate_design` → `od_save_artifact { identifier, title, html }` (global store, NOT project-scoped) |
+| `live_artifacts_update` | Update artifact | — | `od_save_artifact` (same `identifier` → new timestamped dir) |
+| `live_artifacts_list` | List artifacts | — | `od_get_project` (note: returns project's `files`, NOT global artifacts saved via `od_save_artifact`) |
 | `connectors_list` / `connectors_execute` | OAuth data extraction | **NOT AVAILABLE** — ask user for data manually | — |
 
 ## Multi-page consistency (the new hot path)
 
 After issue #37 (PR #40) shipped, `od_generate_design` accepts an optional `projectId`. When provided, it auto-fetches the project's stored `customInstructions` and merges them into the system prompt. **Pair this with the playbook:**
 
-1. Turn 3, step 4: `od_create_project { name, customInstructions: <brand spec from step 2> }` → returns `projectId`
+1. Turn 3, step 4: `od_create_project { id: "<short-slug>", name, customInstructions: <brand spec from step 2> }` → returns `projectId` (the `id` you supplied)
 2. Turn 3, step 5 (each page): `od_generate_design { projectId, prompt: "...page brief..." }` — brand auto-inherited
 3. `od_generate_design` accepts optional `maxTokens` (default 64000) — increase for very long pages, decrease for short snippets.
 4. Result: every page in the project shares the same design language without re-pasting the brand spec
