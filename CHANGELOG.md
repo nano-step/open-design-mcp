@@ -35,6 +35,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.14.5] — 2026-05-19
+
+### Other
+- chore(openspec): archive fix-custominstructions-metadata-stash
+
+**Install:** `npm install open-design-mcp@0.14.5`
+
+---
+
 ## [0.14.4] — 2026-05-19
 
 ### Fixed
