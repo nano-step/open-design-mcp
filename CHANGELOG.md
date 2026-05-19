@@ -45,6 +45,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.16.1] — 2026-05-19
+
+### Other
+- chore(openspec): archive surface-customInstructions-on-get-project
+
+**Install:** `npm install open-design-mcp@0.16.1`
+
+---
+
 ## [0.16.0] — 2026-05-19
 
 ### Added
