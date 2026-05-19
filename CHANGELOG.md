@@ -33,6 +33,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.14.3] — 2026-05-19
+
+### Documentation
+- docs: add v1-ships dogfood evidence (filed #43-#49)
+
+**Install:** `npm install open-design-mcp@0.14.3`
+
+---
+
 ## [0.14.2] — 2026-05-18
 
 ### Other
