@@ -36,6 +36,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.14.6] — 2026-05-19
+
+### Documentation
+- docs: re-dogfood proof for #43 fix (Signal 4 PASS against hosted daemon)
+
+**Install:** `npm install open-design-mcp@0.14.6`
+
+---
+
 ## [0.14.5] — 2026-05-19
 
 ### Other
