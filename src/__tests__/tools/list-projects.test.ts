@@ -100,6 +100,39 @@ describe('makeListProjectsHandler', () => {
     expect(result.content[0].text).toContain('ECONNREFUSED');
   });
 
+  it('surfaces kind from metadata.kind (regression for pre-existing bug)', async () => {
+    const client = makeStubClient({
+      listProjects: vi.fn().mockResolvedValue({
+        projects: [
+          {
+            id: 'p1',
+            name: 'Hello',
+            metadata: { kind: 'prototype' },
+            statusInfo: { displayStatus: 'succeeded' },
+            skillId: null,
+            designSystemId: null,
+            createdAt: 0,
+            updatedAt: 0,
+          },
+          {
+            id: 'p2',
+            name: 'World',
+            metadata: { kind: 'deck' },
+            skillId: null,
+            designSystemId: null,
+            createdAt: 0,
+            updatedAt: 0,
+          },
+        ],
+      }),
+    });
+    const handler = makeListProjectsHandler(client);
+    const result = await handler({}, { signal: new AbortController().signal });
+
+    expect(result.structuredContent?.projects[0].kind).toBe('prototype');
+    expect(result.structuredContent?.projects[1].kind).toBe('deck');
+  });
+
   it('AbortSignal is forwarded to client.listProjects', async () => {
     let capturedSignal: AbortSignal | undefined;
     const client = makeStubClient({

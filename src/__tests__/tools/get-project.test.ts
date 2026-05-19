@@ -129,4 +129,146 @@ describe('makeGetProjectHandler', () => {
     expect(result.structuredContent?.files).toEqual([]);
     expect(result.content[0].text).toContain('Files (0)');
   });
+
+  it('surfaces customInstructions from metadata.customInstructions in both text and structuredContent', async () => {
+    const ci = 'BRAND SPEC FIXTURE — oklch palette + posture rules + anti-slop guard';
+    const client = makeStubClient({
+      getProject: vi.fn().mockResolvedValue({
+        project: {
+          id: 'p1',
+          name: 'Hello',
+          metadata: { kind: 'prototype', customInstructions: ci },
+          skillId: null,
+          designSystemId: null,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        resolvedDir: '/tmp/od/p1',
+      }),
+      listFiles: vi.fn().mockResolvedValue(FILES_RESP),
+    });
+    const handler = makeGetProjectHandler(client);
+    const result = await handler({ projectId: 'p1' }, { signal: new AbortController().signal });
+
+    expect(result.structuredContent?.project.customInstructions).toBe(ci);
+    expect(result.content[0].text).toContain(`Custom Instructions (${ci.length} chars):`);
+    expect(result.content[0].text).toContain(ci);
+  });
+
+  it('falls through to project.customInstructions when metadata.customInstructions is absent', async () => {
+    const ci = 'top-level brand spec fallback';
+    const client = makeStubClient({
+      getProject: vi.fn().mockResolvedValue({
+        project: {
+          id: 'p1',
+          name: 'Hello',
+          metadata: { kind: 'prototype' },
+          customInstructions: ci,
+          skillId: null,
+          designSystemId: null,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        resolvedDir: '/tmp/od/p1',
+      }),
+      listFiles: vi.fn().mockResolvedValue(FILES_RESP),
+    });
+    const handler = makeGetProjectHandler(client);
+    const result = await handler({ projectId: 'p1' }, { signal: new AbortController().signal });
+
+    expect(result.structuredContent?.project.customInstructions).toBe(ci);
+  });
+
+  it('returns customInstructions: undefined when daemon has neither', async () => {
+    const client = makeStubClient({
+      getProject: vi.fn().mockResolvedValue({
+        project: {
+          id: 'p1',
+          name: 'Hello',
+          metadata: { kind: 'prototype' },
+          skillId: null,
+          designSystemId: null,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        resolvedDir: '/tmp/od/p1',
+      }),
+      listFiles: vi.fn().mockResolvedValue(FILES_RESP),
+    });
+    const handler = makeGetProjectHandler(client);
+    const result = await handler({ projectId: 'p1' }, { signal: new AbortController().signal });
+
+    expect(result.structuredContent?.project.customInstructions).toBeUndefined();
+    expect(result.content[0].text).not.toContain('Custom Instructions (');
+  });
+
+  it('treats empty string customInstructions as undefined', async () => {
+    const client = makeStubClient({
+      getProject: vi.fn().mockResolvedValue({
+        project: {
+          id: 'p1',
+          name: 'Hello',
+          metadata: { kind: 'prototype', customInstructions: '' },
+          skillId: null,
+          designSystemId: null,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        resolvedDir: '/tmp/od/p1',
+      }),
+      listFiles: vi.fn().mockResolvedValue(FILES_RESP),
+    });
+    const handler = makeGetProjectHandler(client);
+    const result = await handler({ projectId: 'p1' }, { signal: new AbortController().signal });
+
+    expect(result.structuredContent?.project.customInstructions).toBeUndefined();
+  });
+
+  it('surfaces kind from metadata.kind (regression for pre-existing bug)', async () => {
+    const client = makeStubClient({
+      getProject: vi.fn().mockResolvedValue({
+        project: {
+          id: 'p1',
+          name: 'Hello',
+          metadata: { kind: 'prototype' },
+          skillId: null,
+          designSystemId: null,
+          createdAt: 0,
+          updatedAt: 0,
+        },
+        resolvedDir: '/tmp/od/p1',
+      }),
+      listFiles: vi.fn().mockResolvedValue(FILES_RESP),
+    });
+    const handler = makeGetProjectHandler(client);
+    const result = await handler({ projectId: 'p1' }, { signal: new AbortController().signal });
+
+    expect(result.structuredContent?.project.kind).toBe('prototype');
+  });
+
+  it('surfaces fidelity, skillId, designSystemId, createdAt, updatedAt when present', async () => {
+    const client = makeStubClient({
+      getProject: vi.fn().mockResolvedValue({
+        project: {
+          id: 'p1',
+          name: 'Hello',
+          metadata: { kind: 'prototype', fidelity: 'high-fidelity' },
+          skillId: 'skill-42',
+          designSystemId: 'ds-99',
+          createdAt: 1716100000000,
+          updatedAt: 1716200000000,
+        },
+        resolvedDir: '/tmp/od/p1',
+      }),
+      listFiles: vi.fn().mockResolvedValue(FILES_RESP),
+    });
+    const handler = makeGetProjectHandler(client);
+    const result = await handler({ projectId: 'p1' }, { signal: new AbortController().signal });
+
+    expect(result.structuredContent?.project.fidelity).toBe('high-fidelity');
+    expect(result.structuredContent?.project.skillId).toBe('skill-42');
+    expect(result.structuredContent?.project.designSystemId).toBe('ds-99');
+    expect(result.structuredContent?.project.createdAt).toBe(1716100000000);
+    expect(result.structuredContent?.project.updatedAt).toBe(1716200000000);
+  });
 });
