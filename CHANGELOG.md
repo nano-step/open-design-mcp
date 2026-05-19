@@ -39,6 +39,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.14.9] — 2026-05-19
+
+### Documentation
+- docs: re-dogfood proof for #36 fix (truncation FIXED, 21KB→31KB, properly closed)
+
+**Install:** `npm install open-design-mcp@0.14.9`
+
+---
+
 ## [0.14.8] — 2026-05-19
 
 ### Other
