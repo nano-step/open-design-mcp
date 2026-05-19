@@ -44,6 +44,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.16.0] — 2026-05-19
+
+### Added
+- feat: surface customInstructions on od_get_project (closes #56) (#57)
+
+**Install:** `npm install open-design-mcp@0.16.0`
+
+---
+
 ## [0.15.2] — 2026-05-19
 
 ### Documentation
