@@ -315,4 +315,30 @@ describe('BYOK tools — integration', () => {
     expect(result.isError).not.toBe(true);
     expect(capturedSystemPrompt).toContain(marker);
   });
+
+  it('7. od_generate_design forwards maxTokens to daemon proxy body (issue #36)', async () => {
+    let capturedBody = '';
+
+    mock.handle('POST', '/api/proxy/openai/stream', (_req, res, body) => {
+      capturedBody = body;
+      respondSse(res, [
+        { event: 'start', data: { model: 'open-design' } },
+        { event: 'delta', data: { delta: 'OK' } },
+        { event: 'end', data: {} },
+      ]);
+    });
+
+    const resp = await send({
+      method: 'tools/call',
+      params: {
+        name: 'od_generate_design',
+        arguments: { prompt: 'Test maxTokens', maxTokens: 32_000 },
+      },
+    });
+    const result = resp.result as { isError?: boolean; content: Array<{ text: string }> };
+    expect(result.isError).not.toBe(true);
+
+    const parsed = JSON.parse(capturedBody) as { maxTokens?: number };
+    expect(parsed.maxTokens).toBe(32_000);
+  });
 });

@@ -137,7 +137,8 @@ After issue #37 (PR #40) shipped, `od_generate_design` accepts an optional `proj
 
 1. Turn 3, step 4: `od_create_project { name, customInstructions: <brand spec from step 2> }` → returns `projectId`
 2. Turn 3, step 5 (each page): `od_generate_design { projectId, prompt: "...page brief..." }` — brand auto-inherited
-3. Result: every page in the project shares the same design language without re-pasting the brand spec
+3. `od_generate_design` accepts optional `maxTokens` (default 64000) — increase for very long pages, decrease for short snippets.
+4. Result: every page in the project shares the same design language without re-pasting the brand spec
 
 See [references/workflow-examples.md](references/workflow-examples.md) for a fully-worked multi-page transcript.
 
