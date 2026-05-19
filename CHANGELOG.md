@@ -37,6 +37,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.14.7] — 2026-05-19
+
+### Fixed
+- fix: forward maxTokens to daemon to prevent silent truncation (closes #36) (#51)
+
+**Install:** `npm install open-design-mcp@0.14.7`
+
+---
+
 ## [0.14.6] — 2026-05-19
 
 ### Documentation
