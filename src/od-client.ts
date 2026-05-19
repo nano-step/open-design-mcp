@@ -37,6 +37,8 @@ export interface ProxyStreamRequest {
   apiKey: string;
   model: string;
   systemPrompt: string;
+  /** Optional cap on completion tokens, forwarded to the OD daemon's /api/proxy/<provider>/stream endpoint. Defaults to 8192 on the daemon side when unset — see #36. */
+  maxTokens?: number;
   messages: Array<{ role: 'user' | 'assistant' | 'system'; content: string }>;
 }
 

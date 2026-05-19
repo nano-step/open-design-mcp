@@ -564,6 +564,49 @@ describe('makeGenerateDesignHandler', () => {
     expect(proxyReq.systemPrompt).toContain('METADATA_STASH');
     expect(proxyReq.systemPrompt).not.toContain('TOP_LEVEL');
   });
+
+  it('29. maxTokens explicit value → forwarded to proxyStream (issue #36)', async () => {
+    const proxyStreamMock = vi.fn().mockResolvedValue(
+      sseResponse(['event: end\ndata: {}\n\n']),
+    );
+    const client = makeStubClient({ proxyStream: proxyStreamMock });
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
+    await handler({ prompt: 'x', kind: 'prototype', maxTokens: 32_000 }, {});
+    expect(proxyStreamMock.mock.calls[0][0].maxTokens).toBe(32_000);
+  });
+
+  it('30. maxTokens omitted → default 64000 forwarded (issue #36)', async () => {
+    const proxyStreamMock = vi.fn().mockResolvedValue(
+      sseResponse(['event: end\ndata: {}\n\n']),
+    );
+    const client = makeStubClient({ proxyStream: proxyStreamMock });
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
+    const parsed = generateDesignInputSchema.parse({ prompt: 'x' });
+    await handler(parsed, {});
+    expect(proxyStreamMock.mock.calls[0][0].maxTokens).toBe(64_000);
+  });
+
+  it('31. maxTokens out of range (0 and 300000) → zod rejects', () => {
+    const r1 = generateDesignInputSchema.safeParse({ prompt: 'x', maxTokens: 0 });
+    expect(r1.success).toBe(false);
+    if (!r1.success) {
+      expect(r1.error.issues.some((i) => i.path.includes('maxTokens'))).toBe(true);
+    }
+
+    const r2 = generateDesignInputSchema.safeParse({ prompt: 'x', maxTokens: 300_000 });
+    expect(r2.success).toBe(false);
+    if (!r2.success) {
+      expect(r2.error.issues.some((i) => i.path.includes('maxTokens'))).toBe(true);
+    }
+  });
+
+  it('32. maxTokens non-integer (1.5) → zod rejects', () => {
+    const r = generateDesignInputSchema.safeParse({ prompt: 'x', maxTokens: 1.5 });
+    expect(r.success).toBe(false);
+    if (!r.success) {
+      expect(r.error.issues.some((i) => i.path.includes('maxTokens'))).toBe(true);
+    }
+  });
 });
 
 describe('mergeProjectInstructions (issue #37)', () => {
