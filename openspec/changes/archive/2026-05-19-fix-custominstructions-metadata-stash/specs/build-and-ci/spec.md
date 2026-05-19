@@ -2,7 +2,7 @@
 
 Fixes the end-to-end customInstructions round-trip by stashing a copy in `metadata.customInstructions` (which the daemon round-trips reliably) while keeping the top-level field for forward-compat with a future upstream fix.
 
-## MODIFIED Requirements
+## ADDED Requirements
 
 ### Requirement: customInstructions round-trip
 
