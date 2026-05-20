@@ -8,6 +8,8 @@ The plan has 5–10 short imperative items in the order they'll execute. Mark it
 
 ## Standard plan template
 
+> **HARD RULE — Step 5 is per-section, not per-page.** A "landing page" is **4-6 separate `od_generate_design` calls** (hero, feature grid, how-it-works, callout, footer-cta…), not one monolithic call. A pitch deck is one call per slide-group of 3-5 slides, not one call for all 12 slides. **Split by *scope* (what the prompt asks for), not by `maxTokens` (the output ceiling).** Keep `maxTokens` at the default 64,000 — lowering it risks truncating the model's output mid-section, which is far worse than a "small" prompt. The reason to split is **request size**, not **response size**: asking for one section at a time lets the model focus, lets you critique each piece independently, makes failures recoverable (retry one section, not a whole page), and lets the user redirect mid-flight via the live todo list. Each focused call typically takes ~10-60s and well under 8k tokens of actual output even with the 64k ceiling.
+
 Adapt the middle steps to the brief, but keep steps 1, 7, 8, 9 — they are non-negotiable:
 
 ```
@@ -39,6 +41,29 @@ Adapt the middle steps to the brief, but keep steps 1, 7, 8, 9 — they are non-
 9.  od_lint_artifact { html } + od_save_artifact { identifier, title, html } for each section
     Catch malformed HTML before persisting.
 ```
+
+### Step 5b — Merge sections locally with `Write` / `Edit`
+
+After Step 5 produces N section HTML fragments, **assemble them locally** — do NOT spend an `od_generate_design` call to glue sections together. The orchestrator (or a thin sub-task) builds the final page in three deterministic moves:
+
+1. **Template the shell once** with `Write`: `<!doctype html>`, `<head>` with `:root` tokens bound, the consistent `<nav>`, the consistent `<footer>`, and N empty `<section data-slot="hero">` placeholders. This is plain HTML — not a generation call.
+2. **Inject each section** with `Edit` (find the placeholder marker, replace with the generated fragment). One Edit per section. Idempotent: re-running with a fixed section just replaces that one slot.
+3. **Lint the assembled page** with `od_lint_artifact` once, fix any issues with one more targeted `od_generate_design` call scoped to the broken section, re-inject, re-lint.
+
+**Why local merge:** The shell (nav, footer, doctype, `<head>`, token bindings) is identical across every page in a multi-page site. Re-generating it via BYOK on every page wastes tokens and introduces drift between pages — different `<nav>` markup on the landing vs the changelog defeats the whole "shared design language" goal. Templating the shell once and injecting BYOK output into known slots guarantees structural consistency.
+
+**Anti-pattern:** Asking `od_generate_design` to produce a "complete page including nav and footer" — that's how nav links drift, footer text varies, and Step 5 collapses back into a per-page monolith.
+
+### Sizing guidance — split by scope, not by tokens
+
+| Scope | Approach | `maxTokens` |
+|---|---|---|
+| One section (hero, features-grid, how-it-works, callout, footer-cta) | One `od_generate_design` call with a focused 200-500-char prompt | **64,000 (default)** — leave it alone |
+| One page | N section calls (4-6 typical) + local merge via Write/Edit | **64,000 per call** — never reduce |
+| Multi-page site (landing + about + changelog) | Same per-section pattern, share `projectId` so brand auto-inherits | **64,000 per call** — never reduce |
+| One slide-group (3-5 slides) for a deck | One `od_generate_design` call producing the slide-group HTML | **64,000 (default)** |
+
+**Do not lower `maxTokens` to "force smaller output".** A smaller ceiling silently truncates the model mid-section — far worse than a focused prompt at the full ceiling. The lever for "small output" is the **prompt scope** (ask for less), not the **response cap**.
 
 ## Decks especially — framework first, content second
 

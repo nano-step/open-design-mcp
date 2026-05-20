@@ -15,6 +15,7 @@ const inputSchema = z.object({
   pagePrompt: z.string().min(1).describe('The page/section brief (required)'),
   briefAnswers: briefAnswersSchema.optional().describe('Turn 1 form answers from discovery'),
   brandSpec: z.string().optional().describe('Turn 2 brand specification markdown'),
+  designSystemSummary: z.string().optional().describe('Short summary of the linked design system, inserted verbatim'),
   siblingArtifactSlugs: z.array(z.string()).optional().describe('Reserved for future cross-page consistency; currently ignored'),
 });
 
@@ -26,7 +27,7 @@ export type ComposeBriefArgs = z.infer<typeof inputSchema>;
  * Pure helper function that formats structured inputs into a Turn 3 prompt
  * recognized by upstream Open Design (skips re-asking discovery questions).
  *
- * Section order: [form answers — discovery] → [brand spec] → [page brief]
+ * Section order: [form answers — discovery] → [brand spec] → ### Design System → [page brief]
  * Empty sections (undefined/empty) are omitted entirely.
  * string[] values are joined with ", " (comma-space).
  */
@@ -67,6 +68,11 @@ export function composeBrief(args: ComposeBriefArgs): string {
   // [brand spec] section
   if (args.brandSpec && args.brandSpec.trim()) {
     sections.push(`[brand spec]\n${args.brandSpec}`);
+  }
+
+  // ### Design System section
+  if (args.designSystemSummary && args.designSystemSummary.trim()) {
+    sections.push(`### Design System\n${args.designSystemSummary}`);
   }
 
   // [page brief] section (always rendered — pagePrompt is required)

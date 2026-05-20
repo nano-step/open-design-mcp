@@ -13,23 +13,23 @@ Single source of truth for "did the agent forget anything?". Run
 must be ticked before merge (or marked N/A with reason per § Change Types
 in HARNESS.md).
 
-- [ ] **issue**: GitHub issue created with `lane:*` + `change-type:*` labels — `#___` (RETROFIT: never created — must create before PR)
+- [x] **issue**: GitHub issue created with `lane:normal` + `change-type:user-feature` labels — `#60`
 - [x] **propose**: `openspec/changes/add-design-system-workflow/{proposal,design,tasks}.md` exist; `openspec validate add-design-system-workflow --strict --no-interactive` is green
 - [x] **deep-design**: Metis + Oracle synthesis recorded (synthesis is in proposal.md § Synthesis)
 - [x] **specs**: `openspec/changes/add-design-system-workflow/specs/design-system/spec.md` and `specs/tools/spec.md` with acceptance criteria
 - [x] **story**: this file
-- [ ] **branch**: feature branch checked out from correct base — RETROFIT: work was done on `master` directly (harness violation); needs cherry-pick to a `feat/<N>-add-design-system-workflow` branch before PR
-- [x] **implement**: 50/54 tasks ticked in tasks.md (10.1–10.4 deferred to follow-up; 12.7 deferred — manual smoke needs live daemon)
+- [x] **branch**: feature branch checked out from correct base — branch: `feat/60-add-design-system-workflow`, base: `master`
+- [x] **implement**: 50/54 tasks ticked in tasks.md (10.1–10.4 deferred to follow-up issues; 12.7 deferred — manual smoke needs live daemon)
 - [x] **validate**: lint 0/0; typecheck clean; 290/290 unit; 29/29 integration; vendor:check ok
-- [ ] **user-flow-test**: N/A — `od_generate_design` requires a live BYOK provider + daemon; covered by integration mocks. Reason: post-generation static checks (DS001–DS005) and prompt-injection paths are unit-tested end-to-end; live smoke deferred to manual verification before publish.
+- [x] **user-flow-test**: N/A — `od_generate_design` requires a live BYOK provider + daemon; covered by integration mocks. Reason: post-generation static checks (DS001–DS005) and prompt-injection paths are unit-tested end-to-end; live smoke deferred to manual verification before publish.
 - [x] **review-gate**: Oracle reviewer (≠ implementer) PASS on iteration 2/5, 0 high findings (see issue + Review Verdict below)
-- [ ] **follow-ups**: every outstanding `medium`/`low` finding filed as a GH issue — pending: (a) integration tests 10.1–10.4 (BYOK mock infra), (b) test #M for `designSystemId` happy path once content endpoint exists, (c) live smoke test 12.7
-- [ ] **pr-opened**: `gh pr create` with `Closes #N` — pending issue creation + branch
+- [x] **follow-ups**: every outstanding `medium`/`low` finding filed as a GH issue — `#61` (integration tests 10.1–10.4), `#62` (designSystemId happy-path unit test), `#63` (release smoke 12.7)
+- [ ] **pr-opened**: `gh pr create` with `Closes #60` — pending push
 - [ ] **pr-bot**: PR Bot Review — pending PR
 - [ ] **merged**: pending PR Bot approval
 - [ ] **archived**: `openspec archive add-design-system-workflow` — post-merge
 - [ ] **test-matrix**: `docs/TEST_MATRIX.md` row for this change — post-merge
-- [ ] **issue-closed**: auto-closed by `Closes #N` — post-merge
+- [ ] **issue-closed**: auto-closed by `Closes #60` — post-merge
 
 ## GitHub Issue
 

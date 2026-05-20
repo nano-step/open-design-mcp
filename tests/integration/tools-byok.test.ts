@@ -127,19 +127,22 @@ describe('BYOK tools — integration', () => {
     server.stdin.write(JSON.stringify({ jsonrpc: '2.0', ...req }) + '\n');
   }
 
-  it('1. tools/list returns 10 tool names (sorted)', async () => {
+  it('1. tools/list returns 13 tool names (sorted)', async () => {
     const resp = await send({ method: 'tools/list' });
     const result = resp.result as { tools: Array<{ name: string }> };
     expect(result.tools.map((t) => t.name).sort()).toEqual([
       'od_compose_brief',
       'od_create_project',
       'od_delete_project',
+      'od_extract_design_system',
       'od_generate_design',
+      'od_generate_design_system',
       'od_get_project',
       'od_lint_artifact',
       'od_list_projects',
       'od_save_artifact',
       'od_save_project_file',
+      'od_update_design_system',
       'od_update_project',
     ]);
   });

@@ -1,6 +1,6 @@
 ---
 name: open-design-mcp
-description: Use this skill whenever the user mentions open-design, od_generate_design, OD daemon, BYOK design generation, generating HTML mockups from a PRD, creating or managing Open Design projects, saving design artifacts, linting generated HTML, or any of the 10 `od_*` MCP tools (od_list_projects, od_get_project, od_create_project, od_update_project, od_delete_project, od_save_artifact, od_save_project_file, od_lint_artifact, od_compose_brief, od_generate_design). Also trigger on phrases like "generate a design", "create a mockup", "make a landing page", "list my OD projects", "the design daemon", "the streaming design tool", and on any 401/404/422 error coming from an `od_*` tool call. Covers env-var setup (`OD_DAEMON_URL`, auth modes, BYOK), the full PRD → generate → save → lint workflow, error diagnosis, and the safety rails (lint before save, never commit BYOK keys). Triggers even if the user doesn't explicitly say "open-design-mcp" — keyword matches on `od_*` tool names or "design generation" workflows are enough.
+description: Use this skill whenever the user mentions open-design, od_generate_design, OD daemon, BYOK design generation, generating HTML mockups from a PRD, creating or managing Open Design projects, saving design artifacts, linting generated HTML, or any of the 13 `od_*` MCP tools (od_list_projects, od_get_project, od_create_project, od_update_project, od_delete_project, od_save_artifact, od_save_project_file, od_lint_artifact, od_compose_brief, od_generate_design, od_extract_design_system, od_generate_design_system, od_update_design_system). Also trigger on phrases like "generate a design", "create a mockup", "make a landing page", "list my OD projects", "the design daemon", "the streaming design tool", "design system", "design-system-first", and on any 401/404/422 error coming from an `od_*` tool call. Covers env-var setup (`OD_DAEMON_URL`, auth modes, BYOK), the full PRD → generate → save → lint workflow, the design-system-first multi-page workflow, error diagnosis, and the safety rails (lint before save, never commit BYOK keys). Triggers even if the user doesn't explicitly say "open-design-mcp" — keyword matches on `od_*` tool names or "design generation" workflows are enough.
 compatibility: OpenCode (or any MCP client) with `open-design-mcp` installed and an Open Design daemon reachable at `OD_DAEMON_URL`.
 ---
 
@@ -10,7 +10,7 @@ Skill for using the `open-design-mcp` server — an MCP wrapper around the [Open
 
 ## Overview
 
-`open-design-mcp` exposes **10 tools** that fall into 5 workflows:
+`open-design-mcp` exposes **13 tools** that fall into 5 workflows:
 
 | Workflow | Tools | When |
 |---|---|---|
@@ -19,8 +19,9 @@ Skill for using the `open-design-mcp` server — an MCP wrapper around the [Open
 | **Format** | `od_compose_brief` | Pure helper — combines Turn-1 form answers + brand-spec + page brief into a Turn-3 prompt string. No network, no env vars. |
 | **Validate** | `od_lint_artifact` | Cheap sanity-check on HTML before saving. |
 | **Generate** | `od_generate_design`, `od_save_artifact`, `od_save_project_file` | Streams an HTML design from a PRD using a Bring-Your-Own-Key LLM, then persists it to the global artifact store (`od_save_artifact`) or inside a project (`od_save_project_file`). |
+| **Design System** | `od_generate_design_system`, `od_extract_design_system`, `od_update_design_system` | Generate, inspect, and evolve a shared design system for multi-page visual consistency. `od_generate_design_system` requires BYOK; `od_extract_design_system` is a pure function (no network); `od_update_design_system` supports both BYOK-driven semantic patches and deterministic delta merges. |
 
-All tools require `OD_DAEMON_URL`. **Only `od_generate_design`** additionally needs BYOK env vars (`BYOK_BASE_URL`, `BYOK_API_KEY`, `BYOK_MODEL`). That asymmetry matters — see [references/environment-setup.md](references/environment-setup.md).
+All tools require `OD_DAEMON_URL`. **`od_generate_design` and `od_generate_design_system`** additionally need BYOK env vars (`BYOK_BASE_URL`, `BYOK_API_KEY`, `BYOK_MODEL`). `od_extract_design_system` needs no env vars. That asymmetry matters — see [references/environment-setup.md](references/environment-setup.md).
 
 ## When to Use This Skill
 
@@ -55,7 +56,10 @@ Descriptions are verbatim from `src/tools/*.ts` — do not paraphrase when respo
 | `od_save_project_file` | Persist a file (typically HTML from `od_generate_design`) INSIDE a project so it appears in `od_get_project.files[]` and renders in the daemon UI. Wraps `POST /api/projects/:id/files`. Daemon limit: ~5 MB content. | `OD_DAEMON_URL` |
 | `od_lint_artifact` | Validate an HTML artifact for structural issues. Returns text findings + optional agent message. | `OD_DAEMON_URL` |
 | `od_compose_brief` | Format a Turn 3 prompt for `od_generate_design`. Combines Turn 1 form answers, Turn 2 brand-spec, and the page brief into a single string that upstream Open Design recognizes. Pure function: no network, no env vars. | none |
-| `od_generate_design` | Generate a design artifact using BYOK. Composes the upstream Open Design system prompt and proxies through OD's `/api/proxy/<provider>/stream` endpoint. Requires `BYOK_BASE_URL`, `BYOK_API_KEY`, `BYOK_MODEL` env vars in addition to `OD_DAEMON_URL`. | `OD_DAEMON_URL` + `BYOK_*` |
+| `od_generate_design` | Generate a design artifact using BYOK. Composes the upstream Open Design system prompt and proxies through OD's `/api/proxy/<provider>/stream` endpoint. Requires `BYOK_BASE_URL`, `BYOK_API_KEY`, `BYOK_MODEL` env vars in addition to `OD_DAEMON_URL`. When `projectId` resolves a project with `designSystemId`, auto-injects the design system contract. New optional arg `designSystemMode` (`strict`/`advisory`/`off`). | `OD_DAEMON_URL` + `BYOK_*` |
+| `od_extract_design_system` | Parse a `design-system.html` artifact and return the JSON manifest + the three CSS blocks (`od-tokens`, `od-components`, `od-layout`). Pure function — no network calls, no env vars. Part of the design-system-first workflow. | none |
+| `od_generate_design_system` | Generate a design system artifact (`design-system.html`) via BYOK. Produces tokens, components, and layout CSS plus a JSON manifest and human-reviewable gallery. Post-generation validation ensures the output has all required marker slots. | `OD_DAEMON_URL` + `BYOK_*` |
+| `od_update_design_system` | Update an existing design system. Two modes: `semantic` (BYOK-driven natural-language patch) and `delta` (deterministic JSON merge, no network). Bumps `data-od-version` on every successful update. | `OD_DAEMON_URL` (delta mode: none; semantic mode: + BYOK vars) |
 
 ## Core Workflows
 

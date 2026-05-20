@@ -9,6 +9,7 @@ import { composeSystemPrompt } from '../../vendor/od-contracts/src/prompts/syste
 import type { ProjectKind } from '../../vendor/od-contracts/src/api/projects.js';
 import type { ProjectMetadataWithStash } from '../types/metadata-stash.js';
 import { mapErrorToToolResult } from './errors.js';
+import type { ExtractedDesignSystem } from '../types/design-system.js';
 
 const KIND_VALUES = [
   'prototype',
@@ -46,6 +47,8 @@ const inputSchema = z.object({
     .describe(
       'Cap on completion tokens forwarded to the BYOK provider. Default 64000 (8× the daemon\'s built-in 8192 default). Range [1, 200000]. Most providers cap themselves below this; the daemon forwards verbatim. Avoids the silent truncation in #36.',
     ),
+  designSystemMode: z.enum(['strict', 'advisory', 'off']).optional()
+    .describe("Controls design-system contract enforcement. Defaults to 'strict' when a system is linked, 'off' otherwise."),
 });
 
 export type GenerateDesignArgs = z.infer<typeof inputSchema>;
@@ -81,6 +84,46 @@ export function mergeProjectInstructions(
   if (!stored) return perCall;
   if (!perCall) return stored;
   return `${stored}\n\n---\n\n${perCall}`;
+}
+
+export function buildDesignSystemContract(
+  extracted: ExtractedDesignSystem,
+  mode: 'strict' | 'advisory',
+): string {
+  const heading = `### Design System Contract (${mode})`;
+
+  const rules = mode === 'strict'
+    ? `**Rules (STRICT — violations will be caught by lint):**
+- You MUST inline the three \`<style>\` blocks unchanged into every page you generate.
+- You MUST NOT introduce new CSS custom properties, new color hex values, new component classes, or new spacing values.
+- If a requested element is not in the components catalog, compose it from documented primitives or emit \`<!-- need: <component-name> -->\` and stop that section.`
+    : `**Rules (ADVISORY — deviations should be justified):**
+- Prefer the documented tokens and components; deviations require justification.
+- The design system is guidance, not a hard constraint.`;
+
+  return `${heading}
+
+**Manifest (version ${extracted.version}):**
+\`\`\`json
+${JSON.stringify(extracted.manifest, null, 2)}
+\`\`\`
+
+**Tokens CSS:**
+\`\`\`css
+${extracted.tokensCss}
+\`\`\`
+
+**Components CSS:**
+\`\`\`css
+${extracted.componentsCss}
+\`\`\`
+
+**Layout CSS:**
+\`\`\`css
+${extracted.layoutCss}
+\`\`\`
+
+${rules}`;
 }
 
 export function makeGenerateDesignHandler(
@@ -120,6 +163,10 @@ export function makeGenerateDesignHandler(
     // customInstructions. Errors surface via the same mapErrorToToolResult
     // path as od_get_project (#37).
     let storedCustomInstructions: string | undefined;
+    let designSystemContract: string | undefined;
+    let designSystemAdvisory: string | undefined;
+    let effectiveMode: 'strict' | 'advisory' | 'off' = args.designSystemMode ?? 'off';
+
     if (args.projectId) {
       const earlySignals: AbortSignal[] = [AbortSignal.timeout(timeoutMs)];
       if (extra?.signal) earlySignals.push(extra.signal);
@@ -131,6 +178,43 @@ export function makeGenerateDesignHandler(
         const md = detail.project.metadata as ProjectMetadataWithStash | undefined;
         storedCustomInstructions =
           md?.customInstructions || detail.project.customInstructions || undefined;
+
+        // Step 1.6: if project has designSystemId, fetch files and attempt extraction.
+        const dsId = detail.project.designSystemId;
+        if (dsId) {
+          // Default mode to 'strict' when a design system is linked and caller didn't override.
+          if (!args.designSystemMode) {
+            effectiveMode = 'strict';
+          }
+
+          try {
+            const filesResp = await client.listFiles(args.projectId, earlyCombined);
+            const dsFile = filesResp.files.find((f) => f.name === dsId);
+            if (!dsFile) {
+              effectiveMode = 'off';
+              designSystemAdvisory =
+                `<!-- Warning: linked designSystemId "${dsId}" not found in project files. Design system contract skipped. -->`;
+            } else {
+              // @todo(v0.18): Activate design system auto-injection.
+              // ProjectFile from the daemon's files list endpoint only returns metadata
+              // (name, size, modifiedAt) — not content. Once the daemon exposes a
+              // file-content endpoint (e.g. GET /api/projects/:id/files/:name),
+              // fetch the HTML here, run `extractDesignSystem(html)`, then build the
+              // contract via `buildDesignSystemContract(extracted, effectiveMode)` and
+              // assign to `designSystemContract`. The injection guard at line ~234
+              // already gates on `designSystemContract` being truthy.
+              // Tracked as a known limitation in CHANGELOG v0.17.0.
+              effectiveMode = 'off';
+              designSystemAdvisory =
+                `<!-- Warning: design system file "${dsId}" found but content is not available via the files list API. Design system contract skipped. -->`;
+            }
+          } catch {
+            // Non-fatal: if listFiles fails, skip design system injection.
+            effectiveMode = 'off';
+            designSystemAdvisory =
+              `<!-- Warning: could not fetch project files to load design system "${dsId}". Design system contract skipped. -->`;
+          }
+        }
       } catch (err) {
         return mapErrorToToolResult(err, client.authMode);
       }
@@ -152,6 +236,10 @@ export function makeGenerateDesignHandler(
       });
     } catch (err) {
       return mapErrorToToolResult(err, client.authMode);
+    }
+
+    if (effectiveMode !== 'off' && designSystemContract) {
+      systemPrompt = designSystemContract + '\n\n---\n\n' + systemPrompt;
     }
 
     // Step 3: build proxy request.
@@ -251,8 +339,12 @@ export function makeGenerateDesignHandler(
       return mapErrorToToolResult(err, client.authMode);
     }
 
+    const finalText = designSystemAdvisory
+      ? designSystemAdvisory + '\n\n' + accumulated
+      : accumulated;
+
     return {
-      content: [{ type: 'text', text: accumulated }],
+      content: [{ type: 'text', text: finalText }],
     };
   };
 }
