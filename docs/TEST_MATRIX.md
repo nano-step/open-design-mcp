@@ -14,6 +14,7 @@ Maps every spec requirement to its verification command. Reviewers use this duri
 |---|---|---|---|
 | [US-001 init-package-scaffold](stories/init-package-scaffold.md) | in-progress | normal | infrastructure |
 | [US-060 add-design-system-workflow](stories/add-design-system-workflow.md) | shipped (v0.17.0) | normal | user-feature |
+| [US-067 add-github-pages-site](stories/add-github-pages-site.md) | shipped (v0.18.0) | normal | user-feature |
 
 ---
 
@@ -106,6 +107,41 @@ Maps every spec requirement to its verification command. Reviewers use this duri
 | Integration test placeholder | vitest.integration.config.ts exists | Static | `test -f vitest.integration.config.ts` | AC-8.4 |
 | Integration test placeholder | At least one integration test exists | Integration | `npm run test:integration` after build → exits 0 | AC-8.4 |
 | Integration test placeholder | Integration test command | Static | `node -e "const p=require('./package.json'); process.exit(p.scripts['test:integration']==='vitest run --config vitest.integration.config.ts'?0:1)"` | AC-3.6 |
+
+---
+
+## US-067 add-github-pages-site
+
+### Spec: pages-site
+
+| Requirement | Scenario | Test Type | Test File / Command | Acceptance link |
+|---|---|---|---|---|
+| Deployed via GH Actions from master | Push to master triggers deploy | Static | `grep -E "branches:\s*\[master\]" .github/workflows/pages.yml` | spec/pages-site §Site is deployed via GitHub Actions from master |
+| Deployed via GH Actions from master | PR does NOT deploy | Static | `grep -c pull_request .github/workflows/pages.yml` → 0 | spec/pages-site §Pull request does not deploy |
+| Concurrency prevents mid-flight cancel | Serialized queue | Static | `grep -E "cancel-in-progress:\s*false" .github/workflows/pages.yml` | spec/pages-site §Concurrency prevents mid-flight cancellation |
+| Changelog mechanically derived from CHANGELOG.md | Editing CHANGELOG updates site | Static | `grep -c '{{CHANGELOG_CONTENT}}' site/changelog.html.template` → 1 | spec/pages-site §Changelog page is mechanically derived |
+| Version headings addressable by URL fragment | `<h3 id="0-17-0">` rendered | Unit | `src/__tests__/build-site.test.ts` (case: id="0-17-0") | spec/pages-site §Version headings are addressable |
+| Unreleased section anchor | `<h3 id="0-17-0-unreleased">` rendered | Static | `grep 'id="0-17-0-unreleased"' dist/site/changelog.html` after `npm run build:site` | spec/pages-site §Unreleased section gets a stable anchor |
+| Duplicate version slugs cause build failure | Throw on collision | Unit | `src/__tests__/build-site.test.ts` (case: throws on duplicate slugs) | spec/pages-site §Duplicate version slugs |
+| Exactly one `<h1>` on changelog page | Single h1 chrome | Unit | `src/__tests__/build-site.test.ts` (case: produces exactly one `<h1>`) | spec/pages-site §Changelog page contains exactly one `<h1>` |
+| Build deterministic and offline | Local build produces all files | Unit | `src/__tests__/build-site.test.ts` (case: emits all six expected files) | spec/pages-site §Build is deterministic and reproducible locally |
+| Build deterministic and offline | Offline-safe | Static | `scripts/build-site.mjs` uses only `node:fs`/`node:path`/`marked` — no network | spec/pages-site §Build is offline-safe |
+| Build fails loudly on unsubstituted tokens | No token leakage | Unit | `src/__tests__/build-site.test.ts` (case: substitutes every template token) | spec/pages-site §Build fails loudly on unsubstituted tokens |
+| Site weight ≤ 100 KB raw on-disk | Total size budget | Unit | `src/__tests__/build-site.test.ts` (case: keeps the total weight under 100 KB) | spec/pages-site §Site weight stays under 100 KB |
+| Test discoverable by vitest config | Suite runs with `npm test` | Static + Unit | Path `src/__tests__/build-site.test.ts` matches `vitest.config.ts` include glob; vitest output lists the suite | spec/pages-site §Test is discoverable by the existing vitest config |
+| Site assets excluded from npm tarball | `npm pack` does not include `dist/site/*` | Unit | `src/__tests__/build-site.test.ts` (case: does not ship dist/site/ in the npm tarball) | spec/pages-site §Site assets are excluded from the published npm tarball |
+| Site fully usable with JS disabled | No external scripts | Static | `grep -E '<script src=' site/*.html dist/site/*.html` → 0 matches | spec/pages-site §No external scripts |
+| Site fully usable with JS disabled | Inline scripts small or absent | Static | `grep -c '<script' site/*.html dist/site/*.html` → 0 | spec/pages-site §Inline scripts are small or absent |
+| Pages workflow permissions are minimal | Exactly 3 keys | Static | YAML-parse `.github/workflows/pages.yml` — top-level `permissions:` has `contents: read`, `pages: write`, `id-token: write` only | spec/pages-site §Pages workflow has minimum required permissions |
+| README badge links to live site | URL appears at top | Static | `head -3 README.md \| grep -c "https://nano-step.github.io/open-design-mcp/"` → ≥1 | spec/pages-site §README badge links to live site |
+
+### Live-site smoke checks (post-deploy)
+
+| Check | Command | Expected |
+|---|---|---|
+| Landing page reachable | `curl -fsS -o /dev/null -w "%{http_code}" https://nano-step.github.io/open-design-mcp/` | `200` |
+| Changelog reachable | `curl -fsS -o /dev/null -w "%{http_code}" https://nano-step.github.io/open-design-mcp/changelog.html` | `200` |
+| Anchor deep-link | `curl -fsS https://nano-step.github.io/open-design-mcp/changelog.html \| grep -c 'id="0-17-0"'` | ≥1 |
 
 ---
 
