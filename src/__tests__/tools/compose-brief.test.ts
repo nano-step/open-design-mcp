@@ -122,4 +122,44 @@ describe('composeBrief helper', () => {
     expect(result).toContain('[brackets]');
     expect(result).toContain('Max 50KB\nNo external libs\n[Strict WCAG AA]');
   });
+
+  it('section ordering: all four inputs renders Design System between brand spec and page brief', () => {
+    const args: ComposeBriefArgs = {
+      pagePrompt: 'Checkout page',
+      briefAnswers: {
+        output: 'E-commerce flow',
+        audience: 'Online shoppers',
+      },
+      brandSpec: '# Brand\nprimary: indigo',
+      designSystemSummary: 'Indigo primary, IBM Plex Sans, 4px spacing scale.',
+    };
+    const result = composeBrief(args);
+    const lines = result.split('\n');
+    const formIdx = lines.findIndex((l) => l.includes('[form answers — discovery]'));
+    const brandIdx = lines.findIndex((l) => l.includes('[brand spec]'));
+    const designIdx = lines.findIndex((l) => l.includes('### Design System'));
+    const briefIdx = lines.findIndex((l) => l.includes('[page brief]'));
+
+    expect(formIdx).toBeGreaterThan(-1);
+    expect(brandIdx).toBeGreaterThan(formIdx);
+    expect(designIdx).toBeGreaterThan(brandIdx);
+    expect(briefIdx).toBeGreaterThan(designIdx);
+  });
+
+  it('omission preserves output: without designSystemSummary, output is byte-identical to existing', () => {
+    const args: ComposeBriefArgs = {
+      pagePrompt: 'Contact form',
+    };
+    const result = composeBrief(args);
+    expect(result).toBe('[page brief]\nContact form');
+  });
+
+  it('summary inserted verbatim: designSystemSummary rendered exactly as provided', () => {
+    const args: ComposeBriefArgs = {
+      pagePrompt: 'Landing page',
+      designSystemSummary: 'Indigo primary, IBM Plex Sans, 4px spacing scale.',
+    };
+    const result = composeBrief(args);
+    expect(result).toContain('### Design System\nIndigo primary, IBM Plex Sans, 4px spacing scale.');
+  });
 });

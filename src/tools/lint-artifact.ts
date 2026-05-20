@@ -2,9 +2,16 @@ import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { OdClient } from '../od-client.js';
 import { mapErrorToToolResult } from './errors.js';
+import { runDesignSystemLint } from './design-system-lint.js';
 
 const inputSchema = z.object({
   html: z.string().min(1).describe('Full HTML document to lint'),
+  designSystemHtml: z
+    .string()
+    .optional()
+    .describe(
+      'Full HTML of the linked design system. When provided, runs DS001–DS005 checks.',
+    ),
 });
 
 export { inputSchema as lintArtifactInputSchema };
@@ -48,6 +55,17 @@ export function makeLintArtifactHandler(
       }
       if (res.agentMessage) {
         lines.push('', `Agent: ${res.agentMessage}`);
+      }
+      if (args.designSystemHtml) {
+        const dsFindings = runDesignSystemLint(args.html, args.designSystemHtml);
+        if (dsFindings.length > 0) {
+          lines.push('', `Design System: ${dsFindings.length} finding(s):`);
+          for (const f of dsFindings) {
+            lines.push(`- [${f.code}/${f.severity}] ${f.message}`);
+          }
+        } else {
+          lines.push('', 'Design System: 0 findings.');
+        }
       }
       return { content: [{ type: 'text', text: lines.join('\n') }] };
     } catch (err) {

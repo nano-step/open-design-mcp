@@ -10,7 +10,7 @@ A turn-by-turn Open Design playbook for OpenCode subagents. Transcribed from [ne
 
 ## Overview
 
-`open-design-mcp` ships 10 stateless MCP tools. They're hands, not a brain. This skill is the brain: a multi-turn workflow that drives an LLM through OD's full design arc using a combination of OpenCode's native tools (TodoWrite / Read / Write / Bash / WebFetch / Glob / Grep) and our `od_*` MCP tools.
+`open-design-mcp` ships 13 stateless MCP tools. They're hands, not a brain. This skill is the brain: a multi-turn workflow that drives an LLM through OD's full design arc using a combination of OpenCode's native tools (TodoWrite / Read / Write / Bash / WebFetch / Glob / Grep) and our `od_*` MCP tools.
 
 The architecture:
 
@@ -142,6 +142,17 @@ After issue #37 (PR #40) shipped, `od_generate_design` accepts an optional `proj
 3. `od_generate_design` accepts optional `maxTokens` (default 64000) — increase for very long pages, decrease for short snippets.
 4. Result: every page in the project shares the same design language without re-pasting the brand spec
 
+**Design-system-first (recommended for multi-page projects, v0.17+):** For stronger visual consistency, generate a shared design system before any individual pages:
+
+1. `od_generate_design_system { prompt: "<brand brief>" }` — produces a `design-system.html` with tokens, components, and layout CSS.
+2. `od_save_project_file { projectId, name: "design-system.html", content: <output> }` — saves it inside the project.
+3. `od_update_project { projectId, designSystemId: "design-system.html" }` — links the system to the project.
+4. All subsequent `od_generate_design` calls with this `projectId` auto-inject the design system contract (`designSystemMode` defaults to `strict`).
+
+Use `od_lint_artifact { html, designSystemHtml }` to verify pages conform (findings DS001–DS005). Use `od_update_design_system` to patch the system over time.
+
+Single-page tweaks and standalone designs can skip the design-system step entirely — the workflow is fully opt-in.
+
 See [references/workflow-examples.md](references/workflow-examples.md) for a fully-worked multi-page transcript.
 
 **Note:** `customInstructions` is stashed in `metadata.customInstructions` on create/update and read from there first on generate (daemon compat, [#43](https://github.com/nano-step/open-design-mcp/issues/43)). This is transparent to callers.
@@ -197,7 +208,7 @@ task(
 
 ## Related skills
 
-- **`open-design-mcp`** — the tool-reference skill. Catalog of 10 tools, env-var setup, error diagnosis, individual workflows (list / get / create / update / delete / compose-brief / generate / lint / save-artifact / save-project-file). Load this together with `od-workflow` for the full picture.
+- **`open-design-mcp`** — the tool-reference skill. Catalog of 13 tools, env-var setup, error diagnosis, individual workflows (list / get / create / update / delete / compose-brief / generate / lint / save-artifact / save-project-file / extract-design-system / generate-design-system / update-design-system). Load this together with `od-workflow` for the full picture.
 
 ## Related documentation
 

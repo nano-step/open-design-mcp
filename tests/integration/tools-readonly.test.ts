@@ -109,19 +109,22 @@ describe('read-only tools (PR-C) — integration', () => {
     server.stdin.write(JSON.stringify({ jsonrpc: '2.0', ...req }) + '\n');
   }
 
-  it('tools/list returns all 10 tools', async () => {
+  it('tools/list returns all 13 tools', async () => {
     const resp = await send({ method: 'tools/list' });
     const result = resp.result as { tools: Array<{ name: string }> };
     expect(result.tools.map((t) => t.name).sort()).toEqual([
       'od_compose_brief',
       'od_create_project',
       'od_delete_project',
+      'od_extract_design_system',
       'od_generate_design',
+      'od_generate_design_system',
       'od_get_project',
       'od_lint_artifact',
       'od_list_projects',
       'od_save_artifact',
       'od_save_project_file',
+      'od_update_design_system',
       'od_update_project',
     ]);
   });

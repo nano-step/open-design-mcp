@@ -109,12 +109,12 @@ describe('od_save_project_file — integration', () => {
     server.stdin.write(JSON.stringify({ jsonrpc: '2.0', ...req }) + '\n');
   }
 
-  it('tools/list returns 10 tools including od_save_project_file', async () => {
+  it('tools/list returns 13 tools including od_save_project_file', async () => {
     const resp = await send({ method: 'tools/list' });
     const result = resp.result as { tools: Array<{ name: string }> };
     const names = result.tools.map((t) => t.name).sort();
     expect(names).toContain('od_save_project_file');
-    expect(names).toHaveLength(10);
+    expect(names).toHaveLength(13);
   });
 
   it('od_save_project_file happy path — body round-trips and result contains saved file', async () => {

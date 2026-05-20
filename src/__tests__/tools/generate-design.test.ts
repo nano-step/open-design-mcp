@@ -5,6 +5,7 @@ import {
   makeGenerateDesignHandler,
   mergeProjectInstructions,
   generateDesignInputSchema,
+  buildDesignSystemContract,
   type GenerateDesignArgs,
 } from '../../tools/generate-design.js';
 import type { ByokConfig } from '../../config.js';
@@ -606,6 +607,134 @@ describe('makeGenerateDesignHandler', () => {
     if (!r.success) {
       expect(r.error.issues.some((i) => i.path.includes('maxTokens'))).toBe(true);
     }
+  });
+});
+
+describe('buildDesignSystemContract', () => {
+  const fakeExtracted = {
+    version: 1,
+    manifest: {
+      version: 1 as const,
+      tokens: {
+        colors: { primary: '#4F46E5' },
+        type: { fontFamily: 'Inter', scale: [12, 14, 16] },
+        space: [4, 8, 16],
+        unit: 'px' as const,
+        radii: [4, 8],
+        shadows: ['0 1px 3px rgba(0,0,0,0.1)'],
+        breakpoints: [{ name: 'md', min: 768 }],
+        zIndex: { modal: 100 },
+      },
+      components: [{ name: 'btn-primary', selector: '.btn-primary', role: 'button' as const, snippet: '<button class="btn-primary">Click</button>' }],
+      layout: [{ name: 'container', selector: '.container', purpose: 'page width constraint' }],
+    },
+    tokensCss: ':root { --color-primary: #4F46E5; }',
+    componentsCss: '.btn-primary { background: var(--color-primary); }',
+    layoutCss: '.container { max-width: 1200px; }',
+  };
+
+  it('33. strict mode — heading and MUST rules present', () => {
+    const result = buildDesignSystemContract(fakeExtracted, 'strict');
+    expect(result).toContain('### Design System Contract (strict)');
+    expect(result).toContain('You MUST inline the three');
+    expect(result).toContain('You MUST NOT introduce new CSS custom properties');
+    expect(result).toContain('<!-- need:');
+  });
+
+  it('34. advisory mode — heading present, no MUST rules', () => {
+    const result = buildDesignSystemContract(fakeExtracted, 'advisory');
+    expect(result).toContain('### Design System Contract (advisory)');
+    expect(result).toContain('Prefer the documented tokens');
+    expect(result).not.toContain('MUST');
+  });
+
+  it('35. off mode skips injection — no designSystemId, system prompt unchanged', async () => {
+    const proxyStreamMock = vi.fn().mockResolvedValue(
+      sseResponse(['event: end\ndata: {}\n\n']),
+    );
+    const getProjectMock = vi.fn().mockResolvedValue({
+      project: { id: 'p', name: 'P' },
+      resolvedDir: '/tmp/p',
+    });
+    const client = makeStubClient({
+      proxyStream: proxyStreamMock,
+      getProject: getProjectMock,
+    });
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
+    await handler({ prompt: 'x', kind: 'prototype', projectId: 'p' }, {});
+    const proxyReq = proxyStreamMock.mock.calls[0][0];
+    expect(proxyReq.systemPrompt).not.toContain('Design System Contract');
+  });
+
+  it('36. no designSystemId → system prompt identical to one from project without it', async () => {
+    const proxyStreamMock1 = vi.fn().mockResolvedValue(
+      sseResponse(['event: end\ndata: {}\n\n']),
+    );
+    const proxyStreamMock2 = vi.fn().mockResolvedValue(
+      sseResponse(['event: end\ndata: {}\n\n']),
+    );
+    const getProjectMock = vi.fn().mockResolvedValue({
+      project: { id: 'p', name: 'P' },
+      resolvedDir: '/tmp/p',
+    });
+
+    const handler1 = makeGenerateDesignHandler(
+      makeStubClient({ proxyStream: proxyStreamMock1, getProject: getProjectMock }),
+      600_000,
+      stubByok(),
+    );
+    const handler2 = makeGenerateDesignHandler(
+      makeStubClient({ proxyStream: proxyStreamMock2, getProject: getProjectMock }),
+      600_000,
+      stubByok(),
+    );
+
+    await handler1({ prompt: 'x', kind: 'prototype', projectId: 'p' }, {});
+    await handler2({ prompt: 'x', kind: 'prototype', projectId: 'p' }, {});
+
+    const sp1 = proxyStreamMock1.mock.calls[0][0].systemPrompt;
+    const sp2 = proxyStreamMock2.mock.calls[0][0].systemPrompt;
+    expect(sp1).toBe(sp2);
+  });
+
+  it('37. designSystemMode "loose" is rejected by Zod', () => {
+    const result = generateDesignInputSchema.safeParse({ prompt: 'x', designSystemMode: 'loose' });
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.issues.some((i) => i.path.includes('designSystemMode'))).toBe(true);
+    }
+  });
+
+  it('falls back to advisory comment when designSystemId is linked but file content is unavailable', async () => {
+    const proxyStreamMock = vi.fn().mockResolvedValue(
+      sseResponse(['event: delta\ndata: {"delta":"<html>page</html>"}\n\n', 'event: end\ndata: {}\n\n']),
+    );
+    const listFilesMock = vi.fn().mockResolvedValue({
+      files: [
+        { name: 'design-system.html', size: 1024, mtime: Date.now(), kind: 'html' as const, mime: 'text/html' },
+      ],
+    });
+    const getProjectMock = vi.fn().mockResolvedValue({
+      project: { id: 'p', name: 'P', designSystemId: 'design-system.html' },
+      resolvedDir: '/tmp/p',
+    });
+    const client = makeStubClient({
+      proxyStream: proxyStreamMock,
+      listFiles: listFilesMock,
+      getProject: getProjectMock,
+    });
+    const handler = makeGenerateDesignHandler(client, 600_000, stubByok());
+    const result = await handler({ prompt: 'test design', kind: 'prototype', projectId: 'p' });
+
+    expect(result.isError).toBeUndefined();
+    expect(result.content[0].type).toBe('text');
+    const text = result.content[0].text;
+    expect(text).toContain('<!-- Warning: design system file "design-system.html" found but content is not available via the files list API. Design system contract skipped. -->');
+    expect(text).toContain('<html>page</html>');
+    expect(text.indexOf('<!-- Warning:')).toBeLessThan(text.indexOf('<html>'));
+
+    const proxyReq = proxyStreamMock.mock.calls[0][0];
+    expect(proxyReq.systemPrompt).not.toContain('Design System Contract');
   });
 });
 

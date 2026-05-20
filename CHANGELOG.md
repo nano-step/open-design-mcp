@@ -46,6 +46,26 @@ All notable changes to this project will be documented in this file.
 
 
 
+## [0.17.0] — Unreleased
+
+### Added
+- **Design-system-first workflow** — new opt-in workflow for multi-page visual consistency.
+- `od_generate_design_system` tool — generates a design-system.html artifact (tokens + components + layout) via BYOK.
+- `od_extract_design_system` tool — pure function that parses a design-system.html and returns the JSON manifest + CSS blocks.
+- `od_update_design_system` tool — patches a design system in two modes: semantic (BYOK) or deterministic JSON delta.
+- `designSystemMode` argument on `od_generate_design` (`strict`/`advisory`/`off`) — controls auto-injection of the design system contract when a project has a linked system.
+- `designSystemHtml` argument on `od_lint_artifact` — enables design-system-specific static checks (DS001–DS005: missing style blocks, off-palette colors, undocumented components, new custom properties, token drift).
+- `designSystemSummary` argument on `od_compose_brief` — includes design system context in Turn 3 prompts.
+- `<!-- od-lint-ignore-next-line -->` escape hatch for suppressing DS lint findings.
+
+### Changed
+- Tool count: 10 → 13.
+- Integration test assertions updated to expect 13 tools.
+
+### Known Limitations
+- **`od_generate_design` auto-injection via `designSystemId` linkage is currently a runtime no-op.** The daemon's files-list endpoint (`GET /api/projects/:id/files`) returns only file metadata (name, size, modifiedAt) — not file content. When a project has a linked `designSystemId`, `od_generate_design` detects the link, looks up the file, but falls through to `designSystemMode='off'` and prepends an advisory HTML comment to the output instead of injecting the contract. The `buildDesignSystemContract` code path is implemented, tested, and wired — it activates automatically once the daemon API exposes a file-content endpoint (planned for v0.18). Until then, design system enforcement works through two fully-functional paths: (a) `od_lint_artifact` + `designSystemHtml` for post-generation static checks (DS001–DS005), and (b) `od_compose_brief` + `designSystemSummary` for including design system context in Turn 3 prompts.
+
+---
 
 ## [0.16.2] — 2026-05-20
 
