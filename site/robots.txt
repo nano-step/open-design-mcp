@@ -1,4 +1,2 @@
 User-agent: *
 Allow: /
-
-Sitemap: https://nano-step.github.io/open-design-mcp/sitemap.xml

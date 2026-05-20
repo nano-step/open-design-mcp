@@ -54,7 +54,7 @@ The published page at `/changelog` SHALL be produced by reading `CHANGELOG.md` a
 
 - **GIVEN** the CHANGELOG contains a heading `## [0.17.0] — 2026-05-20`
 - **WHEN** the changelog page is built
-- **THEN** the rendered HTML SHALL contain an `<h2 id="0-17-0">` element wrapping that heading text
+- **THEN** the rendered HTML SHALL contain an `<h3 id="0-17-0">` element wrapping that heading text (level 3, not 2 — the build script depth-shifts all CHANGELOG headings by one to preserve a single page `<h1>`)
 - **AND** opening `https://nano-step.github.io/open-design-mcp/changelog#0-17-0` scrolls the corresponding section into view
 
 #### Scenario: Unreleased section gets a stable anchor
