@@ -17,8 +17,8 @@ github_issue: "#67"
 - [x] **specs**: openspec/changes/add-github-pages-site/specs/pages-site/spec.md
 - [x] **story**: this file
 - [x] **branch**: feat/67-github-pages-changelog from master
-- [ ] **implement**: 13 tasks in tasks.md
-- [ ] **validate**: V1-V6 ladder green
+- [x] **implement**: T1, T3-T13 complete (T2 skipped as planned); T14 deferred to PR body
+- [x] **validate**: V1-V6 ladder green
 - [ ] **user-flow-test**: U1+U2 post-merge manual verification
 - [ ] **review-gate**: fresh reviewer ≠ implementer, zero high findings
 - [ ] **pr-opened**: PR created with Closes #67

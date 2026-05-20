@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Changelog — open-design-mcp</title>
+  <meta name="description" content="Release history for open-design-mcp. Rendered from CHANGELOG.md at build time — single source of truth.">
+  <meta property="og:title" content="open-design-mcp — Changelog">
+  <meta property="og:description" content="Every release of open-design-mcp, rendered from CHANGELOG.md at build time.">
+  <meta property="og:url" content="https://nano-step.github.io/open-design-mcp/changelog.html">
+  <meta property="og:type" content="article">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://nano-step.github.io/open-design-mcp/changelog.html">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="container">
+      <div class="wordmark"><a href="./">open-design-mcp</a></div>
+      <ul>
+        <li><a href="./">Home</a></li>
+        <li><a href="changelog.html" class="is-active">Changelog</a></li>
+        <li><a href="https://github.com/nano-step/open-design-mcp">GitHub ↗</a></li>
+        <li><a href="https://www.npmjs.com/package/open-design-mcp">npm ↗</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main class="changelog">
+    <div class="container">
+      <section class="hero">
+        <h1>Changelog</h1>
+        <p class="lede">
+          Every release of <code>open-design-mcp</code>, rendered at build time from
+          <a href="https://github.com/nano-step/open-design-mcp/blob/master/CHANGELOG.md">CHANGELOG.md</a>
+          on the <code>master</code> branch. Link directly to a release with the version anchor, e.g.
+          <a href="#0-17-0"><code>#0-17-0</code></a>.
+        </p>
+      </section>
+
+      <article>
+{{CHANGELOG_CONTENT}}
+      </article>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© 2026 nano-step · open-design-mcp · Apache-2.0</span>
+      <span>built {{BUILD_DATE}} · <code>{{COMMIT_SHA}}</code> · <a href="https://github.com/nano-step/open-design-mcp/blob/master/CHANGELOG.md">source ↗</a></span>
+    </div>
+  </footer>
+</body>
+</html>
