@@ -47,6 +47,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.17.1] — 2026-05-20
+
+### Other
+- chore(openspec): archive add-design-system-workflow + update TEST_MATRIX (closes #65) (#66)
+
+**Install:** `npm install open-design-mcp@0.17.1`
+
+---
+
 ## [0.17.0] — 2026-05-20
 
 ### Added
