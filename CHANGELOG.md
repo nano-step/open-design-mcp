@@ -46,6 +46,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.16.2] — 2026-05-20
+
+### Other
+- chore(harness): add per-phase compliance checklist + autonomy override (#59)
+
+**Install:** `npm install open-design-mcp@0.16.2`
+
+---
+
 ## [0.16.1] — 2026-05-19
 
 ### Other
