@@ -40,7 +40,8 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "watch": "tsc --watch",
     "vendor:sync": "bash scripts/vendor-sync.sh",
-    "vendor:check": "bash scripts/vendor-check.sh"
+    "vendor:check": "bash scripts/vendor-check.sh",
+    "harness:check": "bash scripts/harness-check.sh"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

@@ -57,6 +57,13 @@ review gate before any work is archived.
          │
          ▼
 ┌─────────────────────┐
+│  Branch             │  detect base (develop if exists, else master)
+│                     │  git checkout -b <type>/<N>-<slug> $BASE
+│                     │  see § Issue → Branch → PR → Review Loop → Merge
+└────────┬────────────┘
+         │
+         ▼
+┌─────────────────────┐
 │  Implement          │  work through tasks list
 │                     │  npm must stay green
 │                     │
@@ -80,14 +87,17 @@ review gate before any work is archived.
          │
          ▼  pass
 ┌─────────────────────┐
-│  Review Gate        │  fresh review agent verifies each acceptance criterion
-│                     │  Reviewer ≠ implementer. Cite evidence per criterion.
-│                     │  → update issue #N: paste Review Verdict + evidence table
+│  Review Gate Loop   │  fresh reviewer (≠ implementer) verifies criteria
+│  (max 5 iters)      │  findings classified high / medium / low
+│                     │  → update issue #N: paste Review Verdict + evidence
 └────────┬────────────┘
          │
-         ├── FAIL ────► fix → re-review (max 1 re-review before consulting human)
+         ├── ≥1 high & iter<5 ──► fix highs → re-review (next iteration)
          │
-         ▼  PASS
+         ├── ≥1 high & iter=5 ──► STOP. label status:blocked + escalate human
+         │
+         ▼  0 high findings (PASS)
+         (file remaining medium/low as follow-up issues before merge)
 ┌─────────────────────┐
 │  PR + Bot Review    │  push branch → open PR (gh pr create --body 'Closes #N')
 │  Loop               │  automated PR review
@@ -115,6 +125,156 @@ Every task has two possible outputs:
 1. **Product delta**: app code, tests, API shape, data model, or product docs.
 2. **Harness delta**: docs, templates, validation expectations, backlog items, or
    decision records that make the next task easier.
+
+## Issue → Branch → PR → Review Loop → Merge
+
+This section codifies the end-to-end ownership chain for every harness task.
+It is not optional — implementing without an issue, branch, or PR is a harness
+violation (see § Forbidden Practices).
+
+### 1. Issue is the unit of work
+
+Every feature, bug, or task — anything that produces a product or harness
+delta — **MUST** begin as a GitHub issue created via `gh issue create`. No
+issue, no work.
+
+```bash
+gh issue create \
+  --repo nano-step/open-design-mcp \
+  --title "<imperative summary>" \
+  --body "<raw user request + assumptions>"
+# → returns the issue number N — record it; everything downstream cites #N
+```
+
+Apply `lane:*` + `change-type:*` labels as soon as Feature Intake classifies the
+request (see § GitHub Issue Tracking → Labels).
+
+Exceptions to issue creation: pure conversational questions, read-only
+exploration, interactive setup. When in doubt, create the issue — closing is
+cheap.
+
+### 2. Branch is created from the correct base
+
+Before any implementation work begins, the agent **MUST** create a feature
+branch via `git checkout -b <branch> <base>`. Direct commits to `master` or
+`develop` are forbidden.
+
+**Base-branch detection** (run this exact check before branching):
+
+```bash
+git fetch --quiet origin
+if git ls-remote --heads origin develop | grep -q develop; then
+  BASE=develop
+else
+  BASE=master
+fi
+echo "Base branch: $BASE"
+```
+
+If `origin/develop` exists, branch from `develop`. Otherwise branch from
+`master`. Never branch from another feature branch.
+
+**Branch naming convention** — match the issue's `change-type:*` label and
+include the issue number plus a short slug:
+
+| change-type | Branch prefix | Example |
+|---|---|---|
+| `user-feature` | `feat/` | `feat/123-add-totp-2fa` |
+| `bug-fix` | `fix/` | `fix/124-otp-not-arriving` |
+| `infrastructure` | `chore/` | `chore/125-bump-node-20` |
+| `refactor` | `refactor/` | `refactor/126-extract-auth-helper` |
+| `docs` | `docs/` | `docs/127-update-readme` |
+| `dependency-bump` | `chore/` | `chore/128-bump-zod-3.24` |
+
+```bash
+git checkout -b feat/123-add-totp-2fa "$BASE"
+```
+
+### 3. Issue ↔ PR is a 1:1 relationship
+
+Every issue **MUST** be closed by exactly one PR, and every PR **MUST** close
+exactly one primary issue via `Closes #N` in its body. No orphan issues, no
+orphan PRs.
+
+```bash
+gh pr create \
+  --repo nano-step/open-design-mcp \
+  --base "$BASE" \
+  --title "<conventional-commit-style title>" \
+  --body "Closes #<N>
+
+<short summary + evidence links>"
+```
+
+If a single PR genuinely resolves multiple issues, list them as `Closes #A,
+Closes #B, Closes #C` — each issue still belongs to one PR. Splitting one
+issue across multiple PRs is a sign the issue was scoped too large — close it
+and open narrower issues instead.
+
+### 4. Review Gate runs as a bounded loop
+
+Per § Review Gate, a fresh reviewer (≠ implementer) verifies acceptance
+criteria with cited evidence. Findings are classified by severity, and the
+loop is capped:
+
+- Reviewer assigns each finding a severity: **`high`**, **`medium`**, or
+  **`low`** (see § Review Gate → Severity Classification for definitions).
+- After each FAIL verdict, the implementer fixes any `high` findings and may
+  defer `medium` / `low` to follow-up issues.
+- Reviewer re-runs the gate. **Maximum 5 iterations.**
+- If iteration 5 still reports any `high` finding, the loop **STOPS** and
+  the issue is escalated to a human (label `status:blocked` + comment with
+  the unresolved high findings).
+
+### 5. Merge gate is severity-based
+
+A PR may merge only when **all** of the following hold:
+
+1. The latest Review Gate iteration reports **zero `high`-severity findings**.
+2. Every outstanding `medium` or `low` finding has been filed as a follow-up
+   GitHub issue (`gh issue create ... --body "Follow-up from #<N>..."`),
+   with the follow-up issue numbers linked in the PR body.
+3. The PR Bot Review Loop (§ PR + Bot Review Loop) has approved or the PR
+   carries a documented human override.
+4. All validation layers required by the lane have green output pasted in
+   the PR (or linked from `docs/stories/<name>.md`).
+
+If any condition fails, the PR is not mergeable — fix or escalate.
+
+### 6. Compliance Checklist Tooling (`npm run harness:check`)
+
+Every change has a story file in `docs/stories/<slug>.md` based on
+`docs/templates/story.md`. The top section is a **Harness Compliance
+Checklist** with one checkbox per phase of this flow. Reading the story file
+answers "did the agent forget anything?" at a glance.
+
+```bash
+npm run harness:check -- --list                     # list known stories
+npm run harness:check -- <slug>                     # default: any unchecked box → fail
+npm run harness:check -- <slug> --pre-merge         # only merge-blockers must be ticked
+npm run harness:check -- <slug> --strict            # zero tolerance
+npm run harness:check -- --all                      # check every story
+```
+
+Exit codes: `0` = pass, `1` = unchecked items in the active mode, `2` = story
+file missing or usage error.
+
+**When to run:**
+
+- Before opening a PR: `npm run harness:check -- <slug> --pre-merge` must
+  return 0. Merge-blocking phases are: `issue`, `propose`, `specs`, `story`,
+  `branch`, `implement`, `validate`, `review-gate`, `pr-opened`, `pr-bot`.
+- Before `openspec archive`: `npm run harness:check -- <slug>` must return 0
+  in default mode (which also catches `merged`, `archived`, `test-matrix`,
+  `issue-closed`).
+- During implementation: run anytime to see what's outstanding — the output
+  is the live to-do list for the change.
+
+**Authoring the checklist:** copy the section from
+`docs/templates/story.md` verbatim. Do not invent new phase names — the
+script only knows the canonical set. If a phase is genuinely N/A for a lane
+(e.g. `propose` for `lane:tiny`), tick it and note "N/A — reason" in the
+label.
 
 ## Source Hierarchy
 
@@ -292,8 +452,8 @@ The reviewer **must not be** the implementing agent.
 1. Read `git diff <default-branch>` + the proposal, design, and spec.
 2. For each acceptance criterion, find evidence (test output, screenshot,
    command result) that it is satisfied.
-3. Produce a verdict: **PASS** (all criteria met with evidence) or **FAIL**
-   (list unmet criteria + missing evidence).
+3. Produce a verdict: **PASS** (zero `high` findings) or **FAIL** (one or more
+   `high` findings). All findings — at every severity — are listed.
 
 **Lane × Change Type → review requirement:**
 
@@ -303,25 +463,89 @@ The reviewer **must not be** the implementing agent.
 | normal | Single Oracle review | self-verify | none |
 | high-risk | Full review-work skill (5 parallel sub-agents) | single Oracle | n/a |
 
-**Review output format:**
+### Severity Classification
+
+The reviewer assigns each finding exactly one severity. These are normative
+definitions — apply them consistently:
+
+| Severity | Definition | Examples |
+|---|---|---|
+| **`high`** | Blocks merge. The change is incorrect, unsafe, or violates an explicit acceptance criterion / spec / harness rule. | Spec criterion unmet; security flaw; data corruption risk; broken backward compat; vendor pristine violated; failing tests merged; type-safety suppression; missing required evidence |
+| **`medium`** | Should be addressed, but does not block merge. Filed as a follow-up issue before merge. | Suboptimal but correct logic; missing edge-case test; unclear naming in public API; minor doc gap |
+| **`low`** | Nice-to-have. Filed as a follow-up issue before merge. | Stylistic nits; opportunistic refactor opportunities; non-public-API naming |
+
+If a reviewer is unsure between two severities, pick the higher one — better
+to over-flag than under-flag.
+
+### Review Loop (max 5 iterations)
+
+```text
+Iteration 1
+  Reviewer runs gate → verdict + findings
+    │
+    ├── 0 high findings ──► PASS → proceed to merge gate
+    │
+    ▼  ≥1 high finding(s)
+Iteration 2: implementer fixes ALL high findings → reviewer re-runs
+    │
+    ├── 0 high ──► PASS
+    │
+    ▼  ≥1 high
+Iteration 3, 4, 5: same pattern
+    │
+    ▼
+After iteration 5 still has ≥1 high finding
+    │
+    ▼
+STOP. Do NOT merge. Label issue `status:blocked`, comment on the issue with
+the unresolved high findings, and tag a human reviewer. Resume only on
+explicit human direction.
+```
+
+**Loop rules:**
+
+- **Cap is 5 iterations**, counted as "review runs" not "fix attempts". A
+  re-review with zero changes does not consume an iteration.
+- **All `high` findings must be addressed in each iteration** — partial fixes
+  reset confidence and consume a slot.
+- **`medium` / `low` findings may carry over** across iterations as long as
+  they are filed as follow-up issues before merge (see merge gate).
+- **The reviewer must cite evidence per finding** — file path + line number,
+  test output, command result, or spec reference. Findings without evidence
+  are dropped.
+
+### Review output format
 
 ```text
 ## Review Verdict: PASS | FAIL
 
 Reviewer: <agent name>
+Iteration: <1-5>
 Date: YYYY-MM-DD
 Commit: <sha>
 
-| Acceptance Criterion | Evidence | Status |
+### Acceptance Criteria
+| Criterion | Evidence | Status |
 |---|---|---|
-| "Users can upload receipt photo" | test_receipt_upload.py passes (output below) | ✓ |
+| "Users can upload receipt photo" | test_receipt_upload.py:42 passes | ✓ |
 | "Items appear in inventory" | simulator output shows items listed | ✓ |
 
-Unmet criteria (if FAIL):
-- [criterion] — missing [evidence type]
+### Findings
+| # | Severity | File:Line | Description | Suggested fix |
+|---|---|---|---|---|
+| 1 | high | src/handlers/upload.ts:88 | Missing auth check on POST | Add `requireUser(req)` before line 88 |
+| 2 | medium | src/handlers/upload.ts:120 | No test for >10MB upload | Add test in receipt_upload_test.ts |
+| 3 | low | src/handlers/upload.ts:34 | Variable `r` should be `req` | Rename |
+
+### Verdict
+- PASS: 0 high findings → merge gate next.
+- FAIL: <N> high findings → implementer fixes, reviewer re-runs (iteration <X+1> of 5).
 ```
 
-**Rule:** `openspec archive "<name>"` is forbidden until Review Verdict = PASS.
+**Rules:**
+- `openspec archive "<name>"` is forbidden until Review Verdict = PASS.
+- Merge is forbidden until § Issue → Branch → PR → Review Loop → Merge §5
+  merge gate conditions are all met.
 
 ## PR + Bot Review Loop
 
@@ -390,6 +614,21 @@ the change becomes part of the trunk.
    classification. Working without an issue ID = invisible work.
 10. **Stale issue.** If implementation progresses but the issue isn't updated
     at the milestones in § GitHub Issue Tracking, the change is in violation.
+11. **Committing to `master` or `develop` directly.** Every harness task
+    works on a feature branch created from the correct base via
+    `git checkout -b <type>/<N>-<slug> $BASE`. See § Issue → Branch → PR →
+    Review Loop → Merge §2 for base-branch detection.
+12. **Orphan PR or orphan issue.** A PR without `Closes #N` in its body, or
+    an issue with no linked PR after implementation begins, violates the 1:1
+    issue↔PR rule.
+13. **Merging with `high`-severity review findings.** The merge gate
+    (§ Issue → Branch → PR → Review Loop → Merge §5) requires zero `high`
+    findings on the latest review iteration. `medium` / `low` findings must
+    be filed as follow-up issues before merge.
+14. **Exceeding the 5-iteration Review Gate cap without escalation.** If
+    iteration 5 still has `high` findings, the loop must STOP and the
+    issue must be labeled `status:blocked` with a comment listing the
+    unresolved findings. Continuing to loop past 5 is a violation.
 
 ## GitHub Issue Tracking
 
