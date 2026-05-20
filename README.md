@@ -1,5 +1,7 @@
 # open-design-mcp
 
+[Website](https://nano-step.github.io/open-design-mcp/) · [Changelog](https://nano-step.github.io/open-design-mcp/changelog.html) · [npm](https://www.npmjs.com/package/open-design-mcp) · [GitHub](https://github.com/nano-step/open-design-mcp)
+
 A stdio [Model Context Protocol](https://modelcontextprotocol.io/) server that bridges coding agents (OpenCode, Claude Code, Cursor, Zed) to a running [Open Design](https://github.com/nexu-io/open-design) daemon — so you can list projects, fetch artifacts, and (in upcoming releases) generate full design artifacts via BYOK from inside your editor.
 
 ## Status

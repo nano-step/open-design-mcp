@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>open-design-mcp — bridge MCP coding agents to the Open Design daemon</title>
+  <meta name="description" content="Stdio MCP server that lets OpenCode, Claude Code, Cursor and Zed list projects, lint artifacts, and generate full designs via BYOK against an Open Design daemon. 13 tools, Apache-2.0.">
+  <meta property="og:title" content="open-design-mcp">
+  <meta property="og:description" content="Bridges MCP-compatible coding agents to the Open Design daemon. BYOK design generation with full systemPrompt fidelity.">
+  <meta property="og:url" content="https://nano-step.github.io/open-design-mcp/">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary">
+  <link rel="canonical" href="https://nano-step.github.io/open-design-mcp/">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <nav class="site-nav">
+    <div class="container">
+      <div class="wordmark"><a href="./">open-design-mcp</a></div>
+      <ul>
+        <li><a href="./" class="is-active">Home</a></li>
+        <li><a href="changelog.html">Changelog</a></li>
+        <li><a href="https://github.com/nano-step/open-design-mcp">GitHub ↗</a></li>
+        <li><a href="https://www.npmjs.com/package/open-design-mcp">npm ↗</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <div class="container">
+      <section class="hero">
+        <h1>Bridge your coding agent to Open Design.</h1>
+        <p class="lede">
+          A stdio Model Context Protocol server that lets OpenCode, Claude Code, Cursor and Zed
+          list projects, fetch artifacts, lint HTML, and generate full designs through your own
+          BYOK provider — against a running <a href="https://github.com/nexu-io/open-design">Open Design</a> daemon.
+        </p>
+        <div class="badges">
+          <a href="https://github.com/nano-step/open-design-mcp">github ↗</a>
+          <a href="https://www.npmjs.com/package/open-design-mcp">npm ↗</a>
+          <a href="changelog.html">changelog ↗</a>
+          <a href="https://github.com/nano-step/open-design-mcp/blob/master/LICENSE">apache-2.0 ↗</a>
+        </div>
+      </section>
+
+      <section id="install">
+        <h2><span class="eyebrow">Get started</span>Install</h2>
+        <p>Add the server to your MCP client config (OpenCode example shown — the same shape works for Claude Code, Cursor, and Zed):</p>
+<pre><code>{
+  "mcp": {
+    "open-design": {
+      "command": "npx",
+      "args": ["-y", "open-design-mcp"],
+      "env": {
+        "OD_DAEMON_URL": "http://ai-open-design:7456",
+        "BYOK_BASE_URL": "https://your-ai-proxy.example.com/v1",
+        "BYOK_API_KEY": "&lt;provider-api-key&gt;",
+        "BYOK_MODEL": "open-design"
+      }
+    }
+  }
+}</code></pre>
+        <p>
+          The server boots with only <code>OD_DAEMON_URL</code> set — BYOK vars are validated lazily
+          when <code>od_generate_design</code> is first called.
+          See the <a href="https://github.com/nano-step/open-design-mcp#installation">README</a> for the full env-var reference.
+        </p>
+      </section>
+
+      <section id="tools">
+        <h2><span class="eyebrow">v0.17.0 ships</span>13 MCP tools</h2>
+        <p>Eleven of the thirteen work with only <code>OD_DAEMON_URL</code>; only <code>od_generate_design</code> and <code>od_generate_design_system</code> require BYOK vars.</p>
+        <table class="tools">
+          <thead>
+            <tr><th>Tool</th><th>Verb</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="tool-name">od_list_projects</td><td class="tool-verb">read</td><td>List all projects on the daemon.</td></tr>
+            <tr><td class="tool-name">od_get_project</td><td class="tool-verb">read</td><td>Fetch a project + its artifact files, including customInstructions, fidelity, skillId, designSystemId.</td></tr>
+            <tr><td class="tool-name">od_create_project</td><td class="tool-verb">write</td><td>Create a project with a client-supplied id, optional customInstructions and design-system link.</td></tr>
+            <tr><td class="tool-name">od_update_project</td><td class="tool-verb">write</td><td>Patch a project's name, custom instructions, or metadata.</td></tr>
+            <tr><td class="tool-name">od_delete_project</td><td class="tool-verb">write</td><td>Permanently delete a project (db row + on-disk dir).</td></tr>
+            <tr><td class="tool-name">od_save_artifact</td><td class="tool-verb">write</td><td>Persist HTML to the daemon's global artifact store.</td></tr>
+            <tr><td class="tool-name">od_save_project_file</td><td class="tool-verb">write</td><td>Persist a file inside a project so it appears in the daemon UI.</td></tr>
+            <tr><td class="tool-name">od_compose_brief</td><td class="tool-verb">format</td><td>Format a Turn 3 prompt with form answers, brand spec, and design system summary.</td></tr>
+            <tr><td class="tool-name">od_extract_design_system</td><td class="tool-verb">read</td><td>Parse a design-system.html and return the JSON manifest + three CSS blocks.</td></tr>
+            <tr><td class="tool-name">od_generate_design_system</td><td class="tool-verb">generate</td><td>Generate a design-system.html (tokens, components, layout) via BYOK.</td></tr>
+            <tr><td class="tool-name">od_update_design_system</td><td class="tool-verb">write</td><td>Patch a design system via semantic (BYOK) or delta (deterministic) mode.</td></tr>
+            <tr><td class="tool-name">od_lint_artifact</td><td class="tool-verb">validate</td><td>Lint an HTML document; optional design-system conformance checks (DS001-DS005).</td></tr>
+            <tr><td class="tool-name">od_generate_design</td><td class="tool-verb">generate</td><td>Generate a design via BYOK; auto-injects linked design system in strict/advisory mode.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="workflow">
+        <h2><span class="eyebrow">Recommended for multi-page projects</span>Design-system-first workflow</h2>
+        <p>
+          For projects that span more than one page, generate a shared design system before any individual page.
+          Every subsequent <code>od_generate_design</code> call against the same project will auto-inject
+          the system contract — no copy-paste, no drift.
+        </p>
+        <pre><code>od_generate_design_system → od_save_project_file (design-system.html)
+                          → od_update_project { designSystemId: "design-system.html" }
+                          → od_generate_design (×N pages, contract auto-injected)
+                          → od_lint_artifact (DS001-DS005 conformance)</code></pre>
+        <p>
+          Strict mode is the default once a design system is linked. Use <code>designSystemMode: "advisory"</code>
+          for looser enforcement or <code>"off"</code> to skip injection entirely.
+        </p>
+      </section>
+
+      <section id="links">
+        <h2><span class="eyebrow">Resources</span>Project links</h2>
+        <ul>
+          <li><a href="https://github.com/nano-step/open-design-mcp">Source on GitHub</a></li>
+          <li><a href="https://www.npmjs.com/package/open-design-mcp">Package on npm</a></li>
+          <li><a href="changelog.html">Changelog</a></li>
+          <li><a href="https://github.com/nano-step/open-design-mcp/issues">Issue tracker</a></li>
+          <li><a href="https://github.com/nano-step/open-design-mcp/blob/master/README.md">README</a></li>
+          <li><a href="https://github.com/nexu-io/open-design">Upstream Open Design</a> (the daemon this bridges to)</li>
+          <li><a href="https://modelcontextprotocol.io/">Model Context Protocol</a></li>
+        </ul>
+      </section>
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© 2026 nano-step · open-design-mcp · Apache-2.0</span>
+      <span><a href="https://github.com/nano-step/open-design-mcp">github ↗</a> · <a href="https://www.npmjs.com/package/open-design-mcp">npm ↗</a> · <a href="changelog.html">changelog ↗</a></span>
+    </div>
+  </footer>
+</body>
+</html>
