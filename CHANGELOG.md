@@ -49,6 +49,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.18.1] — 2026-05-20
+
+### Other
+- chore(openspec): archive add-github-pages-site + update TEST_MATRIX (closes #67) (#70)
+
+**Install:** `npm install open-design-mcp@0.18.1`
+
+---
+
 ## [0.18.0] — 2026-05-20
 
 ### Added
