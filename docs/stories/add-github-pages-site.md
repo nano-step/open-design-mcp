@@ -19,14 +19,14 @@ github_issue: "#67"
 - [x] **branch**: feat/67-github-pages-changelog from master
 - [x] **implement**: T1, T3-T13 complete (T2 skipped as planned); T14 deferred to PR body
 - [x] **validate**: V1-V6 ladder green
-- [ ] **user-flow-test**: U1+U2 post-merge manual verification
+- [x] **user-flow-test**: U1 live-site smoke (curl 200 on / + /changelog.html, id="0-17-0" present, <h1> count = 1); U2 deferred — first deploy is the round-trip baseline
 - [x] **review-gate**: Oracle (≠ implementer) PASS iter-1; 0 high / 0 medium / 4 low; L1 → #68, L2+L3 fixed inline, L4 non-blocking
-- [ ] **pr-opened**: PR created with Closes #67
-- [ ] **pr-bot**: PR bot review PASS
-- [ ] **merged**: PR merged to master
-- [ ] **archived**: openspec archive add-github-pages-site
-- [ ] **test-matrix**: docs/TEST_MATRIX.md updated
-- [ ] **issue-closed**: #67 auto-closed by Closes #67
+- [x] **pr-opened**: PR #69 with Closes #67
+- [x] **pr-bot**: CI checks (validate node-20, validate node-22) both SUCCESS; no PR-bot reviewer configured for this repo
+- [x] **merged**: PR #69 squash-merged at 2026-05-20 08:11:56 UTC (commit ada5ac0)
+- [x] **archived**: archived as openspec/changes/archive/2026-05-20-add-github-pages-site/
+- [x] **test-matrix**: docs/TEST_MATRIX.md updated with US-067 row + 17 requirement-to-test mappings + live-site smoke checks
+- [x] **issue-closed**: #67 auto-closed by Closes #67 in PR body
 
 ## Why
 
