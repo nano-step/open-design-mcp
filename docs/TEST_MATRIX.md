@@ -13,6 +13,35 @@ Maps every spec requirement to its verification command. Reviewers use this duri
 | Story | Status | Lane | Change Type |
 |---|---|---|---|
 | [US-001 init-package-scaffold](stories/init-package-scaffold.md) | in-progress | normal | infrastructure |
+| [US-060 add-design-system-workflow](stories/add-design-system-workflow.md) | shipped (v0.17.0) | normal | user-feature |
+
+---
+
+## US-060 add-design-system-workflow
+
+### Spec: design-system
+
+| Requirement | Scenario | Test Type | Test File / Command | Acceptance link |
+|---|---|---|---|---|
+| Artifact shape (4 marker slots) | Happy path round-trip | Unit | `src/__tests__/tools/extract-design-system.test.ts` (cases: valid manifest, byte-identical CSS) | spec/design-system §Artifact Shape |
+| Missing style block → isError | Each of od-tokens / od-components / od-layout missing | Unit | `src/__tests__/tools/extract-design-system.test.ts` (3 cases) | spec/design-system §Extraction |
+| Manifest schema v1 accepted, v2 rejected | Version literal validation | Unit | `src/__tests__/types/design-system.test.ts` + `extract-design-system.test.ts` | spec/design-system §Manifest |
+| BYOK generation happy path | Valid HTML output passes extractor | Unit | `src/__tests__/tools/generate-design-system.test.ts` (case: valid HTML returns no isError) | spec/design-system §Generate |
+| Post-stream validation failure → isError + 2 items | Generator emits artifact missing slot | Unit | `src/__tests__/tools/generate-design-system.test.ts` (case: missing marker slot) | spec/design-system §Generate |
+| Update semantic + delta modes | Version bumped, schema valid | Unit | `src/__tests__/tools/update-design-system.test.ts` (semantic + delta cases) | spec/design-system §Update |
+| bumpVersion increments data-od-version | 3→4, absent throws | Unit | `src/__tests__/tools/update-design-system.test.ts` (case: bumpVersion) | spec/design-system §Update |
+
+### Spec: tools
+
+| Requirement | Scenario | Test Type | Test File / Command | Acceptance link |
+|---|---|---|---|---|
+| Tool count 10 → 13 | All registrations present | Integration | `tests/integration/initialize-handshake.test.ts` (asserts toolList.length=13) | spec/tools §Registration |
+| `designSystemMode` arg on od_generate_design | Strict / advisory / off contract wording | Unit | `src/__tests__/tools/generate-design.test.ts` (tests #33–#36) | spec/tools §generate-design |
+| Auto-inject advisory fallback when content unavailable | Linked file found but no content | Unit | `src/__tests__/tools/generate-design.test.ts` (test: falls back to advisory comment) | spec/tools §generate-design (known limitation) |
+| DS001–DS005 lint rules (incl. SVG skip + ignore-next-line) | Each rule positive + negative | Unit | `src/__tests__/tools/design-system-lint.test.ts` | spec/tools §lint-artifact |
+| `designSystemSummary` on od_compose_brief | Inserted between brand-spec and page-prompt; byte-identical when omitted | Unit | `src/__tests__/tools/compose-brief.test.ts` (cases: ordering, omission) | spec/tools §compose-brief |
+| Backward compatibility — all new args optional | Omitting all new args produces pre-v0.17 output | Unit | All test files above with backward-compat cases | spec/tools §Compatibility |
+| Wrapper-injection NOT vendor | `vendor/od-contracts/` untouched | Static | `git diff vendor/od-contracts/ HEAD~N` empty + `npm run vendor:check` ok | spec/tools §Vendor |
 
 ---
 
