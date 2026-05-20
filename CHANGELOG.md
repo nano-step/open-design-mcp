@@ -46,6 +46,16 @@ All notable changes to this project will be documented in this file.
 
 
 
+
+## [0.17.0] — 2026-05-20
+
+### Added
+- feat(design-system): add design-system-first workflow (closes #60) (#64)
+
+**Install:** `npm install open-design-mcp@0.17.0`
+
+---
+
 ## [0.17.0] — Unreleased
 
 ### Added
