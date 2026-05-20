@@ -20,7 +20,7 @@ github_issue: "#67"
 - [x] **implement**: T1, T3-T13 complete (T2 skipped as planned); T14 deferred to PR body
 - [x] **validate**: V1-V6 ladder green
 - [ ] **user-flow-test**: U1+U2 post-merge manual verification
-- [ ] **review-gate**: fresh reviewer ≠ implementer, zero high findings
+- [x] **review-gate**: Oracle (≠ implementer) PASS iter-1; 0 high / 0 medium / 4 low; L1 → #68, L2+L3 fixed inline, L4 non-blocking
 - [ ] **pr-opened**: PR created with Closes #67
 - [ ] **pr-bot**: PR bot review PASS
 - [ ] **merged**: PR merged to master
