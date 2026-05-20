@@ -4,7 +4,7 @@
 
 ## Status
 
-in-review
+shipped (v0.17.0 — merged 2026-05-20)
 
 ## Harness Compliance Checklist
 
@@ -24,12 +24,12 @@ in HARNESS.md).
 - [x] **user-flow-test**: N/A — `od_generate_design` requires a live BYOK provider + daemon; covered by integration mocks. Reason: post-generation static checks (DS001–DS005) and prompt-injection paths are unit-tested end-to-end; live smoke deferred to manual verification before publish.
 - [x] **review-gate**: Oracle reviewer (≠ implementer) PASS on iteration 2/5, 0 high findings (see issue + Review Verdict below)
 - [x] **follow-ups**: every outstanding `medium`/`low` finding filed as a GH issue — `#61` (integration tests 10.1–10.4), `#62` (designSystemId happy-path unit test), `#63` (release smoke 12.7)
-- [ ] **pr-opened**: `gh pr create` with `Closes #60` — pending push
-- [ ] **pr-bot**: PR Bot Review — pending PR
-- [ ] **merged**: pending PR Bot approval
-- [ ] **archived**: `openspec archive add-design-system-workflow` — post-merge
-- [ ] **test-matrix**: `docs/TEST_MATRIX.md` row for this change — post-merge
-- [ ] **issue-closed**: auto-closed by `Closes #60` — post-merge
+- [x] **pr-opened**: `gh pr create` with `Closes #60` — PR #64 https://github.com/nano-step/open-design-mcp/pull/64
+- [x] **pr-bot**: CI validate(20) + validate(22) green; `mergeStateStatus: CLEAN`; no branch protection requiring human review
+- [x] **merged**: squash-merged at 2026-05-20T03:10:42Z, commit `d2c5236`, branch `feat/60-add-design-system-workflow` deleted
+- [x] **archived**: `openspec archive add-design-system-workflow` → `openspec/changes/archive/2026-05-20-add-design-system-workflow/`
+- [x] **test-matrix**: `docs/TEST_MATRIX.md` row added with US-060 + per-spec table
+- [x] **issue-closed**: auto-closed by `Closes #60` at 2026-05-20T03:10:43Z
 
 ## GitHub Issue
 
